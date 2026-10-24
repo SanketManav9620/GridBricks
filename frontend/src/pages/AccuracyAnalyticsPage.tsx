@@ -53,6 +53,11 @@ type SortField =
 type SortDirection = 'asc' | 'desc';
 
 export const AccuracyAnalyticsPage: React.FC = () => {
+  // Set page title
+  React.useEffect(() => {
+    document.title = 'GridBricks | Accuracy & Safety Buffer Sizing';
+  }, []);
+
   // Requirement: All views react to cutoff control, defaulting to 09:00
   const [cutoff, setCutoff] = useState<string>('09:00');
 
@@ -605,7 +610,7 @@ export const AccuracyAnalyticsPage: React.FC = () => {
           <button
             id="download-daily-csv-button"
             onClick={handleDownloadDailyCsv}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-500 text-white flex items-center space-x-1.5 shadow-sm transition-colors self-start sm:self-auto"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-500 text-white flex items-center space-x-1.5 shadow-sm transition-colors self-start sm:self-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Download Daily CSV</span>
@@ -617,8 +622,16 @@ export const AccuracyAnalyticsPage: React.FC = () => {
             <thead className="bg-navy-950 text-slate-400 uppercase font-mono sticky top-0 border-b border-slate-800 z-10 shadow-sm select-none">
               <tr>
                 <th
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleSort('delivery_date')}
-                  className="py-2.5 px-3 cursor-pointer hover:text-white transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSort('delivery_date');
+                    }
+                  }}
+                  className="py-2.5 px-3 cursor-pointer hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-teal-400"
                 >
                   <div className="flex items-center space-x-1">
                     <span>Delivery Date</span>
@@ -635,8 +648,16 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                 </th>
 
                 <th
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleSort('bias')}
-                  className="py-2.5 px-3 text-right cursor-pointer hover:text-white transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSort('bias');
+                    }
+                  }}
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-teal-400"
                 >
                   <div className="flex items-center justify-end space-x-1">
                     <span>Bias (MW)</span>
@@ -653,8 +674,16 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                 </th>
 
                 <th
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleSort('mae')}
-                  className="py-2.5 px-3 text-right cursor-pointer hover:text-white transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSort('mae');
+                    }
+                  }}
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-teal-400"
                 >
                   <div className="flex items-center justify-end space-x-1">
                     <span>MAE (MW)</span>
@@ -671,8 +700,16 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                 </th>
 
                 <th
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleSort('rmse')}
-                  className="py-2.5 px-3 text-right cursor-pointer hover:text-white transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSort('rmse');
+                    }
+                  }}
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-teal-400"
                 >
                   <div className="flex items-center justify-end space-x-1">
                     <span>RMSE (MW)</span>
@@ -689,8 +726,16 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                 </th>
 
                 <th
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleSort('wape')}
-                  className="py-2.5 px-3 text-right cursor-pointer hover:text-white transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSort('wape');
+                    }
+                  }}
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-teal-400"
                 >
                   <div className="flex items-center justify-end space-x-1">
                     <span>WAPE (%)</span>
@@ -707,8 +752,16 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                 </th>
 
                 <th
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleSort('p90_over_forecast')}
-                  className="py-2.5 px-3 text-right cursor-pointer hover:text-white transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSort('p90_over_forecast');
+                    }
+                  }}
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-teal-400"
                 >
                   <div className="flex items-center justify-end space-x-1">
                     <span>P90 Miss (MW)</span>
@@ -725,8 +778,16 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                 </th>
 
                 <th
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleSort('recommended_buffer_mw')}
-                  className="py-2.5 px-3 text-right cursor-pointer hover:text-white transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSort('recommended_buffer_mw');
+                    }
+                  }}
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-400"
                 >
                   <div className="flex items-center justify-end space-x-1">
                     <span>Dynamic Buffer (MW)</span>
@@ -743,6 +804,7 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                 </th>
               </tr>
             </thead>
+
 
             <tbody className="divide-y divide-slate-800/60 font-mono">
               {sortedDailyData.map((row) => (

@@ -90,6 +90,22 @@ This document tracks all explicit assumptions, domain rules, and technical decis
 - **Monthly Timeseries Brush**: The whole-month forecast vs. actual view displays all 744 hours of January 2026 with an interactive Recharts brush component for custom date-range zooming and granular inspection.
 - **CSV Data Export**: The 48-period granular table on the Forecast page provides client-side CSV generation with deterministic headers and ISO UTC timestamps.
 
+---
+
+## 8. Methodology, Accessibility & Containerisation Architecture
+- **Trading Decision Formulation**: The day-ahead wholesale electricity trading desk must size energy bids on day D-1 before EPEX SPOT and Nord Pool power auction gate closure. Bids submitted into the day-ahead auction represent firm commitments to deliver or receive physical energy.
+- **Decision Cutoff Timestamp**: At a chosen decision gate (default `09:00` Europe/London on D-1), all forecasts published strictly with `publishTime <= cutoff` are eligible; any later publication is strictly discarded to avoid look-ahead bias.
+- **Latest Forecast Selection & Resolution Matching**:
+  - For each target delivery hour $h \in \{0, \dots, 23\}$ on day D, the system queries all candidate records with `startTime == h:00` and selects $\arg\max_{\text{publishTime} \le \text{cutoff}} \text{publishTime}$.
+  - Because `WINDFOR` is hourly whereas `FUELHH` actuals and settlement periods are half-hourly (SP 1–48), the hourly forecast is broadcast to both constituent half-hour settlement periods (`:00` and `:30`). For accuracy verification, actuals are averaged to hourly resolution.
+- **Risk Buffer Sizing & Imbalance Mechanics**:
+  - The UK Cash-Out mechanism penalizes negative imbalance (being short in generation) at the System Buy Price (SBP), which can surge above £500–£1,000/MWh during tight system conditions.
+  - Sizing an empirical safety buffer at the 90th percentile of historical over-forecast shortfalls ($\text{Shortfall} = \max(0, \text{Forecast} - \text{Actual})$) protects capital: bidding at $\text{Safe Bid} = \max(0, \text{Forecast} - \text{Buffer})$ bounds shortfall risk to $\le 10\%$ of settlement hours.
+- **Containerisation Specifications**:
+  - Backend: `python:3.13-slim` image, non-root user `appuser` (UID 10001), built-in Python healthcheck hitting `/api/health`.
+  - Frontend: Multi-stage Docker build using `node:20-alpine` for building Vite production assets, and `nginx:alpine` for serving static assets and reverse-proxying `/api/` requests to `http://backend:8000/api/`.
+  - Compose: Single-command deployment (`docker compose up --build`) binding frontend on port 3000 (and 80) and backend on port 8000 with inter-service networking and healthcheck dependencies.
+
 
 
 

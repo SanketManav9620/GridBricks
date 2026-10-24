@@ -41,6 +41,11 @@ export const DayAheadDeskPage: React.FC = () => {
   const [showRevisions, setShowRevisions] = useState<boolean>(false);
   const [revealActual, setRevealActual] = useState<boolean>(false);
 
+  // Set page title
+  React.useEffect(() => {
+    document.title = 'GridBricks | Day-Ahead Decision Desk';
+  }, []);
+
   // Sync initial date from metadata once available
   React.useEffect(() => {
     if (meta?.available_dates?.length && !meta.available_dates.includes(deliveryDate)) {
@@ -341,7 +346,7 @@ export const DayAheadDeskPage: React.FC = () => {
             <button
               id="toggle-revisions-button"
               onClick={() => setShowRevisions(!showRevisions)}
-              className={`px-2.5 py-1.5 rounded text-xs font-medium flex items-center space-x-1.5 border transition-all ${
+              className={`px-2.5 py-1.5 rounded text-xs font-medium flex items-center space-x-1.5 border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
                 showRevisions
                   ? 'bg-navy-700 border-slate-500 text-slate-100 shadow-sm'
                   : 'bg-navy-800/80 border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-600'
@@ -355,7 +360,7 @@ export const DayAheadDeskPage: React.FC = () => {
             <button
               id="reveal-actual-button"
               onClick={() => setRevealActual(!revealActual)}
-              className={`px-2.5 py-1.5 rounded text-xs font-medium flex items-center space-x-1.5 border transition-all ${
+              className={`px-2.5 py-1.5 rounded text-xs font-medium flex items-center space-x-1.5 border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
                 revealActual
                   ? 'bg-sky-950/70 border-sky-500/50 text-sky-300 shadow-sm'
                   : 'bg-navy-800/80 border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-600'
@@ -529,7 +534,7 @@ export const DayAheadDeskPage: React.FC = () => {
           <button
             id="download-csv-button"
             onClick={handleDownloadCsv}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-500 text-white flex items-center space-x-1.5 shadow-sm transition-colors self-start sm:self-auto"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-500 text-white flex items-center space-x-1.5 shadow-sm transition-colors self-start sm:self-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Download CSV</span>

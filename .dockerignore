@@ -1,0 +1,11 @@
+**/.git
+**/.gitignore
+**/node_modules
+**/dist
+**/__pycache__
+**/.pytest_cache
+**/.venv
+**/venv
+*.log
+docs/
+scripts/

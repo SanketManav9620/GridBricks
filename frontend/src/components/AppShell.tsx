@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Wind, Activity, BarChart3, ShieldCheck, ExternalLink } from 'lucide-react';
+import { Wind, Activity, BarChart3, BookOpen, ShieldCheck, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AppShellProps {
@@ -9,13 +9,13 @@ interface AppShellProps {
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-navy-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-navy-950 text-slate-100 flex flex-col font-sans">
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-navy-900/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo & Brand */}
           <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500/20 to-teal-500/5 border border-teal-500/30 text-teal-400">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500/20 to-teal-500/5 border border-teal-500/30 text-teal-400 shadow-sm">
               <Wind className="w-5 h-5 animate-spin-slow" />
             </div>
             <div>
@@ -32,13 +32,13 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           </div>
 
           {/* Center Navigation Links */}
-          <nav className="flex items-center space-x-1 sm:space-x-2">
+          <nav aria-label="Main Navigation" className="flex items-center space-x-1 sm:space-x-2">
             <NavLink
               to="/"
               end
               className={({ isActive }) =>
                 cn(
-                  'flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all duration-150',
+                  'flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500',
                   isActive
                     ? 'bg-teal-500/10 text-teal-300 border border-teal-500/30 shadow-sm'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-navy-800/80 border border-transparent'
@@ -50,10 +50,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             </NavLink>
 
             <NavLink
-              to="/analytics"
+              to="/accuracy"
               className={({ isActive }) =>
                 cn(
-                  'flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all duration-150',
+                  'flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500',
                   isActive
                     ? 'bg-teal-500/10 text-teal-300 border border-teal-500/30 shadow-sm'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-navy-800/80 border border-transparent'
@@ -63,7 +63,23 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               <BarChart3 className="w-3.5 h-3.5" />
               <span>Accuracy & Buffer Sizing</span>
             </NavLink>
+
+            <NavLink
+              to="/method"
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500',
+                  isActive
+                    ? 'bg-teal-500/10 text-teal-300 border border-teal-500/30 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-navy-800/80 border border-transparent'
+                )
+              }
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Methodology</span>
+            </NavLink>
           </nav>
+
 
           {/* Right Status Indicator */}
           <div className="hidden md:flex items-center space-x-3">
