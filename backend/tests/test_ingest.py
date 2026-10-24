@@ -4,14 +4,12 @@ Unit tests for data cleansing, deduplication, and snapshot creation in ingest.py
 """
 
 from datetime import datetime, timezone
-import gzip
 from pathlib import Path
-import pandas as pd
-import pytest
 from unittest.mock import MagicMock
 
-from app.models import FuelHHRecord, WindForecastRecord
+import pandas as pd
 from app.ingest import clean_and_dedupe_actuals, clean_and_dedupe_forecasts, run_ingest
+from app.models import FuelHHRecord, WindForecastRecord
 
 
 def test_clean_and_dedupe_actuals():
@@ -22,9 +20,33 @@ def test_clean_and_dedupe_actuals():
     p2 = datetime(2026, 1, 1, 1, 0, tzinfo=timezone.utc)
 
     records = [
-        FuelHHRecord(dataset="FUELHH", startTime=t1, publishTime=p1, settlementDate="2026-01-01", settlementPeriod=1, fuelType="WIND", generation=1000.0),
-        FuelHHRecord(dataset="FUELHH", startTime=t1, publishTime=p1, settlementDate="2026-01-01", settlementPeriod=1, fuelType="WIND", generation=1200.0), # Duplicate
-        FuelHHRecord(dataset="FUELHH", startTime=t2, publishTime=p2, settlementDate="2026-01-01", settlementPeriod=2, fuelType="WIND", generation=2000.0),
+        FuelHHRecord(
+            dataset="FUELHH",
+            startTime=t1,
+            publishTime=p1,
+            settlementDate="2026-01-01",
+            settlementPeriod=1,
+            fuelType="WIND",
+            generation=1000.0,
+        ),
+        FuelHHRecord(
+            dataset="FUELHH",
+            startTime=t1,
+            publishTime=p1,
+            settlementDate="2026-01-01",
+            settlementPeriod=1,
+            fuelType="WIND",
+            generation=1200.0,
+        ),  # Duplicate
+        FuelHHRecord(
+            dataset="FUELHH",
+            startTime=t2,
+            publishTime=p2,
+            settlementDate="2026-01-01",
+            settlementPeriod=2,
+            fuelType="WIND",
+            generation=2000.0,
+        ),
     ]
 
     df = clean_and_dedupe_actuals(records)
@@ -41,8 +63,12 @@ def test_clean_and_dedupe_forecasts():
 
     records = [
         WindForecastRecord(dataset="WINDFOR", startTime=t1, publishTime=p1, generation=5000.0),
-        WindForecastRecord(dataset="WINDFOR", startTime=t1, publishTime=p1, generation=5200.0), # Duplicate
-        WindForecastRecord(dataset="WINDFOR", startTime=t1, publishTime=p2, generation=5500.0), # New version
+        WindForecastRecord(
+            dataset="WINDFOR", startTime=t1, publishTime=p1, generation=5200.0
+        ),  # Duplicate
+        WindForecastRecord(
+            dataset="WINDFOR", startTime=t1, publishTime=p2, generation=5500.0
+        ),  # New version
     ]
 
     df = clean_and_dedupe_forecasts(records)

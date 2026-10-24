@@ -5,7 +5,8 @@ Normalises all datetime timestamps to timezone-aware UTC.
 """
 
 from datetime import datetime, timezone
-from typing import Optional, Any
+from typing import Any
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -32,6 +33,7 @@ class FuelHHRecord(BaseModel):
     """
     Model representing a single half-hour fuel outturn record (FUELHH).
     """
+
     dataset: str = "FUELHH"
     publishTime: datetime
     startTime: datetime
@@ -60,6 +62,7 @@ class WindForecastRecord(BaseModel):
     """
     Model representing a single wind forecast record (WINDFOR).
     """
+
     dataset: str = "WINDFOR"
     publishTime: datetime
     startTime: datetime

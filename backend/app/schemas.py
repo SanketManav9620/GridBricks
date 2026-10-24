@@ -4,7 +4,8 @@ Pydantic response models and input validation schemas for the FastAPI API layer.
 """
 
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -36,15 +37,22 @@ class TimeseriesPoint(BaseModel):
     p90_hedge_mw: float = 0.0
 
 
-
 class ForecastPoint(BaseModel):
-    settlementPeriod: int = Field(..., ge=1, le=48, description="Half-hour settlement period (1-48)")
+    settlementPeriod: int = Field(
+        ..., ge=1, le=48, description="Half-hour settlement period (1-48)"
+    )
     startTime: datetime = Field(..., description="Target delivery start timestamp (UTC)")
     forecast_mw: float = Field(..., description="Day-ahead forecasted generation in MW")
-    publishTime: datetime = Field(..., description="Publication timestamp of this forecast run (UTC)")
+    publishTime: datetime = Field(
+        ..., description="Publication timestamp of this forecast run (UTC)"
+    )
     horizon_hours: float = Field(..., description="Forecast horizon/lead time in hours")
-    risk_band_p90_mw: float = Field(..., description="Conservative hedge generation (Forecast - P90 buffer)")
-    risk_band_p95_mw: float = Field(..., description="High-confidence hedge generation (Forecast - P95 buffer)")
+    risk_band_p90_mw: float = Field(
+        ..., description="Conservative hedge generation (Forecast - P90 buffer)"
+    )
+    risk_band_p95_mw: float = Field(
+        ..., description="High-confidence hedge generation (Forecast - P95 buffer)"
+    )
 
 
 class RevisionItem(BaseModel):

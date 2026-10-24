@@ -5,12 +5,13 @@ Loads compressed snapshots once on startup/first access, provides fast slicing,
 and supports live API fallback via environment flag ELEXON_LIVE_FALLBACK.
 """
 
+import logging
 import os
 import threading
-import logging
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
+
 import pandas as pd
 
 from app.elexon_client import ElexonClient
@@ -58,10 +59,13 @@ class DataRepository:
             return df
 
         if self.live_fallback:
-            logger.warning("Actuals snapshot not found. Triggering live fallback fetch for 2025-12-31 to 2026-02-02...")
+            logger.warning(
+                "Actuals snapshot not found. Triggering live fallback fetch for 2025-12-31 to 2026-02-02..."
+            )
             with ElexonClient() as client:
                 records = client.fetch_actuals_range("2025-12-31", "2026-02-02")
                 from app.ingest import clean_and_dedupe_actuals
+
                 df = clean_and_dedupe_actuals(records)
                 df["startTime"] = pd.to_datetime(df["startTime"], utc=True)
                 df["publishTime"] = pd.to_datetime(df["publishTime"], utc=True)
@@ -84,10 +88,13 @@ class DataRepository:
             return df
 
         if self.live_fallback:
-            logger.warning("Forecasts snapshot not found. Triggering live fallback fetch for 2025-12-31 to 2026-02-02...")
+            logger.warning(
+                "Forecasts snapshot not found. Triggering live fallback fetch for 2025-12-31 to 2026-02-02..."
+            )
             with ElexonClient() as client:
                 records = client.fetch_forecasts_range("2025-12-31", "2026-02-02")
                 from app.ingest import clean_and_dedupe_forecasts
+
                 df = clean_and_dedupe_forecasts(records)
                 df["startTime"] = pd.to_datetime(df["startTime"], utc=True)
                 df["publishTime"] = pd.to_datetime(df["publishTime"], utc=True)
@@ -125,14 +132,15 @@ class DataRepository:
         """
         self._ensure_loaded()
         df = self._actuals_df
+        assert df is not None
 
         mask = pd.Series(True, index=df.index)
         if start_time is not None:
             st = _normalize_tz(start_time)
-            mask &= (df["startTime"] >= st)
+            mask &= df["startTime"] >= st
         if end_time is not None:
             et = _normalize_tz(end_time)
-            mask &= (df["startTime"] <= et)
+            mask &= df["startTime"] <= et
 
         return df[mask].copy().reset_index(drop=True)
 
@@ -149,17 +157,18 @@ class DataRepository:
         """
         self._ensure_loaded()
         df = self._forecasts_df
+        assert df is not None
 
         mask = pd.Series(True, index=df.index)
         if start_time is not None:
             st = _normalize_tz(start_time)
-            mask &= (df["startTime"] >= st)
+            mask &= df["startTime"] >= st
         if end_time is not None:
             et = _normalize_tz(end_time)
-            mask &= (df["startTime"] <= et)
+            mask &= df["startTime"] <= et
         if max_publish_time is not None:
             mpt = _normalize_tz(max_publish_time)
-            mask &= (df["publishTime"] <= mpt)
+            mask &= df["publishTime"] <= mpt
 
         return df[mask].copy().reset_index(drop=True)
 

@@ -3,10 +3,8 @@ backend/tests/test_api.py
 Unit tests for all FastAPI endpoints using starlette/fastapi TestClient.
 """
 
-import pytest
-from fastapi.testclient import TestClient
-
 from app.api import app
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
 
@@ -104,7 +102,9 @@ def test_accuracy_by_horizon_endpoint():
 
 
 def test_accuracy_distribution_endpoint():
-    resp = client.get("/api/accuracy/distribution", params={"cutoff": "11:00", "bin_size_mw": 500.0})
+    resp = client.get(
+        "/api/accuracy/distribution", params={"cutoff": "11:00", "bin_size_mw": 500.0}
+    )
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) > 0
@@ -121,4 +121,3 @@ def test_accuracy_timeseries_endpoint():
     assert "forecast_mw" in data[0]
     assert "actual_mw" in data[0]
     assert "p90_hedge_mw" in data[0]
-

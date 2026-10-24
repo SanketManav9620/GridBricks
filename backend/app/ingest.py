@@ -7,13 +7,12 @@ Usage:
     python -m app.ingest --from 2025-12-31 --to 2026-02-02
 """
 
-import sys
 import argparse
 import logging
 from pathlib import Path
-from datetime import datetime, timezone
+from typing import Optional
+
 import pandas as pd
-import numpy as np
 
 from app.elexon_client import ElexonClient
 
@@ -29,7 +28,9 @@ def clean_and_dedupe_actuals(records: list) -> pd.DataFrame:
     and deduplicate on composite key (startTime, publishTime).
     """
     if not records:
-        return pd.DataFrame(columns=["startTime", "publishTime", "settlementDate", "settlementPeriod", "generation"])
+        return pd.DataFrame(
+            columns=["startTime", "publishTime", "settlementDate", "settlementPeriod", "generation"]
+        )
 
     data = [
         {
@@ -42,7 +43,9 @@ def clean_and_dedupe_actuals(records: list) -> pd.DataFrame:
         for r in records
     ]
     if not data:
-        return pd.DataFrame(columns=["startTime", "publishTime", "settlementDate", "settlementPeriod", "generation"])
+        return pd.DataFrame(
+            columns=["startTime", "publishTime", "settlementDate", "settlementPeriod", "generation"]
+        )
 
     df = pd.DataFrame(data)
     initial_count = len(df)
@@ -111,8 +114,12 @@ def clean_and_dedupe_forecasts(records: list) -> pd.DataFrame:
     return df
 
 
-
-def run_ingest(start_date: str, end_date: str, output_dir: Path, client: ElexonClient = None) -> tuple[Path, Path]:
+def run_ingest(
+    start_date: str,
+    end_date: str,
+    output_dir: Path,
+    client: Optional[ElexonClient] = None,
+) -> tuple[Path, Path]:
     """
     Execute end-to-end ingestion pipeline and write compressed CSV snapshots.
     """
@@ -147,9 +154,15 @@ def run_ingest(start_date: str, end_date: str, output_dir: Path, client: ElexonC
         print("\n" + "=" * 60)
         print(" INGESTION COMPLETE")
         print("=" * 60)
-        print(f"  Actuals rows:    {len(df_actuals):,} -> {actuals_path} ({size_actuals_kb:.1f} KB)")
-        print(f"  Forecasts rows:  {len(df_forecasts):,} -> {forecasts_path} ({size_forecasts_kb:.1f} KB)")
-        print(f"  Total bundle:    {(size_actuals_kb + size_forecasts_kb):.1f} KB (optimised for Vercel)")
+        print(
+            f"  Actuals rows:    {len(df_actuals):,} -> {actuals_path} ({size_actuals_kb:.1f} KB)"
+        )
+        print(
+            f"  Forecasts rows:  {len(df_forecasts):,} -> {forecasts_path} ({size_forecasts_kb:.1f} KB)"
+        )
+        print(
+            f"  Total bundle:    {(size_actuals_kb + size_forecasts_kb):.1f} KB (optimised for Vercel)"
+        )
         print("=" * 60 + "\n")
 
         return actuals_path, forecasts_path
@@ -160,10 +173,16 @@ def run_ingest(start_date: str, end_date: str, output_dir: Path, client: ElexonC
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Ingest Elexon BMRS datasets into compressed snapshots.")
-    parser.add_argument("--from", dest="from_date", default="2025-12-31", help="Start date (YYYY-MM-DD)")
+    parser = argparse.ArgumentParser(
+        description="Ingest Elexon BMRS datasets into compressed snapshots."
+    )
+    parser.add_argument(
+        "--from", dest="from_date", default="2025-12-31", help="Start date (YYYY-MM-DD)"
+    )
     parser.add_argument("--to", dest="to_date", default="2026-02-02", help="End date (YYYY-MM-DD)")
-    parser.add_argument("--output-dir", default=str(DEFAULT_DATA_DIR), help="Output directory for snapshot files")
+    parser.add_argument(
+        "--output-dir", default=str(DEFAULT_DATA_DIR), help="Output directory for snapshot files"
+    )
     args = parser.parse_args()
 
     run_ingest(args.from_date, args.to_date, Path(args.output_dir))

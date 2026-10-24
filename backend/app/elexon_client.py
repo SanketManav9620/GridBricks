@@ -4,10 +4,11 @@ HTTP client for the Elexon Insights Solution (BMRS) API.
 Built with httpx, chunked daily queries, exponential backoff retries, and typed validation.
 """
 
-import time
 import logging
-from datetime import datetime, date, timedelta, timezone
-from typing import Optional, List, Dict, Any, Generator
+import time
+from datetime import date, timedelta
+from typing import Any, Dict, Generator, List, Optional
+
 import httpx
 from pydantic import ValidationError
 
@@ -23,11 +24,13 @@ DEFAULT_BACKOFF_FACTOR = 0.5  # 0.5s, 1.0s, 2.0s
 
 class ElexonClientError(Exception):
     """Base exception for Elexon client errors."""
+
     pass
 
 
 class ElexonAPIError(ElexonClientError):
     """Exception raised when Elexon API returns an error response."""
+
     def __init__(self, status_code: int, message: str):
         super().__init__(f"Elexon API error {status_code}: {message}")
         self.status_code = status_code
@@ -36,6 +39,7 @@ class ElexonAPIError(ElexonClientError):
 
 class ElexonTimeoutError(ElexonClientError):
     """Exception raised when an Elexon API request times out."""
+
     pass
 
 
@@ -60,7 +64,7 @@ class ElexonClient:
         self._external_client = client is not None
         self.client = client or httpx.Client(
             timeout=httpx.Timeout(self.timeout, connect=10.0),
-            headers={"Accept": "application/json"}
+            headers={"Accept": "application/json"},
         )
 
     def close(self):
@@ -79,12 +83,12 @@ class ElexonClient:
         Execute a GET request with exponential backoff on transient errors (5xx, timeouts, connection errors).
         """
         url = f"{self.base_url}{endpoint}"
-        last_exception = None
+        last_exception: Optional[Exception] = None
 
         for attempt in range(self.max_retries + 1):
             try:
                 response = self.client.get(url, params=params)
-                
+
                 # Check for server errors that warrant retry
                 if response.status_code in (500, 502, 503, 504, 429):
                     raise ElexonAPIError(response.status_code, response.text[:200])
@@ -94,10 +98,14 @@ class ElexonClient:
 
             except (httpx.TimeoutException, ElexonTimeoutError) as e:
                 last_exception = ElexonTimeoutError(f"Request to {url} timed out: {e}")
-                logger.warning(f"Timeout on {url} (attempt {attempt + 1}/{self.max_retries + 1}): {e}")
+                logger.warning(
+                    f"Timeout on {url} (attempt {attempt + 1}/{self.max_retries + 1}): {e}"
+                )
             except (httpx.NetworkError, ElexonAPIError) as e:
                 last_exception = e
-                logger.warning(f"Transient error on {url} (attempt {attempt + 1}/{self.max_retries + 1}): {e}")
+                logger.warning(
+                    f"Transient error on {url} (attempt {attempt + 1}/{self.max_retries + 1}): {e}"
+                )
             except httpx.HTTPStatusError as e:
                 # 4xx client errors (e.g. 400 Bad Request, 404) are not retried
                 raise ElexonAPIError(e.response.status_code, e.response.text[:200]) from e
@@ -106,10 +114,12 @@ class ElexonClient:
 
             # If retries remain, back off exponentially
             if attempt < self.max_retries:
-                sleep_time = self.backoff_factor * (2 ** attempt)
+                sleep_time = self.backoff_factor * (2**attempt)
                 time.sleep(sleep_time)
 
-        raise last_exception or ElexonClientError(f"Failed to query {url} after {self.max_retries + 1} attempts")
+        raise last_exception or ElexonClientError(
+            f"Failed to query {url} after {self.max_retries + 1} attempts"
+        )
 
     @staticmethod
     def _date_range_days(start_date: str, end_date: str) -> Generator[str, None, None]:
@@ -124,13 +134,9 @@ class ElexonClient:
         """
         Fetch FUELHH actual wind generation for a single settlement date (48 half-hours).
         """
-        params = {
-            "settlementDateFrom": day_str,
-            "settlementDateTo": day_str,
-            "fuelType": "WIND"
-        }
+        params = {"settlementDateFrom": day_str, "settlementDateTo": day_str, "fuelType": "WIND"}
         data = self._request_with_retry("/datasets/FUELHH/stream", params=params)
-        
+
         records: List[FuelHHRecord] = []
         for raw in data:
             try:
@@ -155,7 +161,7 @@ class ElexonClient:
         """
         params = {
             "publishDateTimeFrom": f"{day_str}T00:00:00Z",
-            "publishDateTimeTo": f"{day_str}T23:59:59Z"
+            "publishDateTimeTo": f"{day_str}T23:59:59Z",
         }
         data = self._request_with_retry("/datasets/WINDFOR/stream", params=params)
 

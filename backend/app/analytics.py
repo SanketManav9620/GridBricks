@@ -5,9 +5,10 @@ Calculates point-in-time forecasts, error tables, accuracy metrics, multi-dimens
 and expanding-window safety buffers.
 """
 
-from datetime import datetime, date, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional, Union
 from zoneinfo import ZoneInfo
-from typing import Optional, Union, Dict, Any, List
+
 import numpy as np
 import pandas as pd
 
@@ -29,7 +30,9 @@ def _ensure_utc_datetime(dt_val: Any) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
-def compute_decision_cutoff(delivery_date: Union[date, str], cutoff_hhmm: str = "11:00") -> datetime:
+def compute_decision_cutoff(
+    delivery_date: Union[date, str], cutoff_hhmm: str = "11:00"
+) -> datetime:
     """
     Compute the auction gate cutoff timestamp in UTC.
     The cutoff is evaluated on the day prior to delivery (D-1) at cutoff_hhmm in Europe/London timezone.
@@ -49,7 +52,9 @@ def compute_decision_cutoff(delivery_date: Union[date, str], cutoff_hhmm: str = 
     hour, minute = map(int, cutoff_hhmm.strip().split(":"))
 
     london_tz = ZoneInfo("Europe/London")
-    cutoff_london = datetime(trading_day.year, trading_day.month, trading_day.day, hour, minute, tzinfo=london_tz)
+    cutoff_london = datetime(
+        trading_day.year, trading_day.month, trading_day.day, hour, minute, tzinfo=london_tz
+    )
     return cutoff_london.astimezone(timezone.utc)
 
 
@@ -78,7 +83,14 @@ def latest_forecast_at_cutoff(
             ['startTime', 'forecast_mw', 'publishTime', 'horizon_hours', 'delivery_date', 'cutoff_time']
         Empty DataFrame with these columns if no eligible forecast exists.
     """
-    cols = ["startTime", "forecast_mw", "publishTime", "horizon_hours", "delivery_date", "cutoff_time"]
+    cols = [
+        "startTime",
+        "forecast_mw",
+        "publishTime",
+        "horizon_hours",
+        "delivery_date",
+        "cutoff_time",
+    ]
     if forecasts.empty:
         return pd.DataFrame(columns=cols)
 
@@ -114,10 +126,14 @@ def latest_forecast_at_cutoff(
 
     # Pick latest publishTime for each startTime
     # Sort by startTime asc, publishTime asc, then keep last
-    latest = eligible.sort_values(["startTime", "publishTime"]).drop_duplicates(subset=["startTime"], keep="last")
+    latest = eligible.sort_values(["startTime", "publishTime"]).drop_duplicates(
+        subset=["startTime"], keep="last"
+    )
 
     latest["forecast_mw"] = latest["generation"]
-    latest["horizon_hours"] = (latest["startTime"] - latest["publishTime"]).dt.total_seconds() / 3600.0
+    latest["horizon_hours"] = (
+        latest["startTime"] - latest["publishTime"]
+    ).dt.total_seconds() / 3600.0
     latest["delivery_date"] = d_target.isoformat()
     latest["cutoff_time"] = cutoff_utc
 
@@ -166,7 +182,7 @@ def forecast_revisions(
     mask = (df["startTime"] >= d_start) & (df["startTime"] < d_end)
     if max_publish_time is not None:
         mpt = _ensure_utc_datetime(max_publish_time)
-        mask &= (df["publishTime"] <= mpt)
+        mask &= df["publishTime"] <= mpt
 
     revs = df[mask].copy()
     if revs.empty:
@@ -208,8 +224,16 @@ def compute_errors(
              'error_mw', 'abs_error_mw', 'pct_error', 'publishTime', 'horizon_hours']
     """
     cols = [
-        "startTime", "delivery_date", "hour", "forecast_mw", "actual_mw",
-        "error_mw", "abs_error_mw", "pct_error", "publishTime", "horizon_hours"
+        "startTime",
+        "delivery_date",
+        "hour",
+        "forecast_mw",
+        "actual_mw",
+        "error_mw",
+        "abs_error_mw",
+        "pct_error",
+        "publishTime",
+        "horizon_hours",
     ]
     if forecasts.empty or actuals.empty:
         return pd.DataFrame(columns=cols)
@@ -227,9 +251,11 @@ def compute_errors(
     if alignment == "hourly":
         # Aggregate half-hourly actuals to hour level
         act["hour_start"] = act["startTime"].dt.floor("h")
-        act_agg = act.groupby("hour_start", as_index=False).agg(
-            actual_mw=("generation", "mean")
-        ).rename(columns={"hour_start": "startTime"})
+        act_agg = (
+            act.groupby("hour_start", as_index=False)
+            .agg(actual_mw=("generation", "mean"))
+            .rename(columns={"hour_start": "startTime"})
+        )
 
         # Ensure forecasts are on the hour
         fc["startTime"] = fc["startTime"].dt.floor("h")
@@ -240,7 +266,9 @@ def compute_errors(
         act["hour_start"] = act["startTime"].dt.floor("h")
         merged = pd.merge(act, fc, on="hour_start", how="inner", suffixes=("_act", "_fc"))
         merged["startTime"] = merged["startTime_act"]
-        merged["actual_mw"] = merged["generation"]
+        merged["actual_mw"] = (
+            merged["generation_act"] if "generation_act" in merged.columns else merged["generation"]
+        )
     else:
         raise ValueError(f"Unsupported alignment: {alignment}. Must be 'hourly' or 'half_hourly'.")
 
@@ -251,9 +279,7 @@ def compute_errors(
     merged["error_mw"] = merged["forecast_mw"] - merged["actual_mw"]
     merged["abs_error_mw"] = merged["error_mw"].abs()
     merged["pct_error"] = np.where(
-        merged["actual_mw"] > 0,
-        (merged["abs_error_mw"] / merged["actual_mw"]) * 100.0,
-        np.nan
+        merged["actual_mw"] > 0, (merged["abs_error_mw"] / merged["actual_mw"]) * 100.0, np.nan
     )
     merged["delivery_date"] = merged["startTime"].dt.date.astype(str)
     merged["hour"] = merged["startTime"].dt.hour
@@ -268,11 +294,12 @@ def compute_errors(
             if merged["publishTime"].isna().all():
                 merged["horizon_hours"] = np.nan
             else:
-                merged["horizon_hours"] = (merged["startTime"] - merged["publishTime"]).dt.total_seconds() / 3600.0
+                merged["horizon_hours"] = (
+                    merged["startTime"] - merged["publishTime"]
+                ).dt.total_seconds() / 3600.0
 
     res = merged[cols].sort_values("startTime").reset_index(drop=True)
     return res
-
 
 
 def calculate_metrics(errors_df: pd.DataFrame) -> Dict[str, float]:
@@ -332,7 +359,7 @@ def calculate_metrics(errors_df: pd.DataFrame) -> Dict[str, float]:
         "count": n,
         "bias": float(err.mean()),
         "mae": float(abs_err.mean()),
-        "rmse": float(np.sqrt((err ** 2).mean())),
+        "rmse": float(np.sqrt((err**2).mean())),
         "wape": float(wape),
         "p50_abs_error": float(abs_err.quantile(0.50)),
         "p90_abs_error": float(abs_err.quantile(0.90)),
@@ -362,7 +389,16 @@ def aggregate_by_delivery_day(errors_df: pd.DataFrame) -> pd.DataFrame:
 
     res_df = pd.DataFrame(results)
     # Reorder columns with delivery_date first
-    first_cols = ["delivery_date", "count", "bias", "mae", "rmse", "wape", "p90_over_forecast", "pct_within_10pct"]
+    first_cols = [
+        "delivery_date",
+        "count",
+        "bias",
+        "mae",
+        "rmse",
+        "wape",
+        "p90_over_forecast",
+        "pct_within_10pct",
+    ]
     remaining = [c for c in res_df.columns if c not in first_cols]
     return res_df[first_cols + remaining].sort_values("delivery_date").reset_index(drop=True)
 
@@ -384,7 +420,16 @@ def aggregate_by_hour_of_day(errors_df: pd.DataFrame) -> pd.DataFrame:
         results.append(m)
 
     res_df = pd.DataFrame(results)
-    first_cols = ["hour", "count", "bias", "mae", "rmse", "wape", "p90_over_forecast", "pct_within_10pct"]
+    first_cols = [
+        "hour",
+        "count",
+        "bias",
+        "mae",
+        "rmse",
+        "wape",
+        "p90_over_forecast",
+        "pct_within_10pct",
+    ]
     remaining = [c for c in res_df.columns if c not in first_cols]
     return res_df[first_cols + remaining].sort_values("hour").reset_index(drop=True)
 
@@ -466,13 +511,15 @@ def compute_error_histogram(
         b_min = edges[i]
         b_max = edges[i + 1]
         c = counts[i]
-        rows.append({
-            "bin_min": float(b_min),
-            "bin_max": float(b_max),
-            "bin_label": f"[{b_min:.0f}, {b_max:.0f})",
-            "count": int(c),
-            "frequency_pct": float((c / total) * 100.0),
-        })
+        rows.append(
+            {
+                "bin_min": float(b_min),
+                "bin_max": float(b_max),
+                "bin_label": f"[{b_min:.0f}, {b_max:.0f})",
+                "count": int(c),
+                "frequency_pct": float((c / total) * 100.0),
+            }
+        )
 
     return pd.DataFrame(rows)
 
@@ -552,11 +599,13 @@ def recommended_buffer_expanding_window(
             buf = 0.0
             mean_prior = float("nan")
 
-        records.append({
-            "delivery_date": current_day,
-            "recommended_buffer_mw": buf,
-            "history_days_count": prior_days_count,
-            "mean_error_prior_mw": mean_prior,
-        })
+        records.append(
+            {
+                "delivery_date": current_day,
+                "recommended_buffer_mw": buf,
+                "history_days_count": prior_days_count,
+                "mean_error_prior_mw": mean_prior,
+            }
+        )
 
     return pd.DataFrame(records)

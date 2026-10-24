@@ -3,13 +3,13 @@ backend/tests/test_elexon_client.py
 Unit tests for ElexonClient, typed Pydantic models, retries, and UTC normalisation.
 """
 
-from datetime import datetime, timezone
-import pytest
-import httpx
-from unittest.mock import MagicMock, patch
+from datetime import timezone
+from unittest.mock import MagicMock
 
+import httpx
+import pytest
+from app.elexon_client import ElexonAPIError, ElexonClient, ElexonTimeoutError
 from app.models import FuelHHRecord, WindForecastRecord
-from app.elexon_client import ElexonClient, ElexonAPIError, ElexonTimeoutError
 
 
 def test_fuelhh_model_utc_normalisation():
@@ -21,7 +21,7 @@ def test_fuelhh_model_utc_normalisation():
         settlementDate="2026-01-01",
         settlementPeriod=1,
         fuelType="WIND",
-        generation=12500.5
+        generation=12500.5,
     )
     assert rec.publishTime.tzinfo == timezone.utc
     assert rec.startTime.tzinfo == timezone.utc
@@ -37,7 +37,7 @@ def test_fuelhh_model_rejects_negative_generation():
             settlementDate="2026-01-01",
             settlementPeriod=1,
             fuelType="WIND",
-            generation=-10.0
+            generation=-10.0,
         )
 
 
@@ -46,7 +46,7 @@ def test_windfor_model_utc_normalisation():
         dataset="WINDFOR",
         publishTime="2026-01-01T02:30:00Z",
         startTime="2026-01-01T12:00:00Z",
-        generation=15400
+        generation=15400,
     )
     assert rec.publishTime.tzinfo == timezone.utc
     assert rec.startTime.tzinfo == timezone.utc
@@ -62,7 +62,7 @@ def test_client_fetch_actuals_day_success():
             "settlementDate": "2026-01-01",
             "settlementPeriod": 1,
             "fuelType": "WIND",
-            "generation": 14000
+            "generation": 14000,
         }
     ]
 
@@ -86,7 +86,7 @@ def test_client_fetch_forecasts_day_success():
             "dataset": "WINDFOR",
             "publishTime": "2026-01-01T02:30:00Z",
             "startTime": "2026-01-01T10:00:00Z",
-            "generation": 13200
+            "generation": 13200,
         }
     ]
 
@@ -105,7 +105,7 @@ def test_client_fetch_forecasts_day_success():
 
 def test_client_retry_on_server_error_then_success():
     mock_http = MagicMock()
-    
+
     error_resp = MagicMock()
     error_resp.status_code = 500
     error_resp.text = "Internal Server Error"
@@ -117,7 +117,7 @@ def test_client_retry_on_server_error_then_success():
             "dataset": "WINDFOR",
             "publishTime": "2026-01-01T02:30:00Z",
             "startTime": "2026-01-01T10:00:00Z",
-            "generation": 9800
+            "generation": 9800,
         }
     ]
 

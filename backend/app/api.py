@@ -6,42 +6,41 @@ accuracy summaries, daily/hourly/horizon aggregations, and error histograms.
 """
 
 import re
-from datetime import datetime, date, timedelta, timezone
-from typing import List, Optional, Dict, Any
-from functools import lru_cache
-import pandas as pd
+from datetime import date, datetime, timedelta, timezone
+from typing import Any, Dict, List
 
-from fastapi import FastAPI, Query, HTTPException, Depends
+import pandas as pd
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.repository import get_repository, DataRepository
 from app.analytics import (
-    compute_decision_cutoff,
-    latest_forecast_at_cutoff,
-    forecast_revisions,
-    compute_errors,
-    calculate_metrics,
     aggregate_by_delivery_day,
-    aggregate_by_hour_of_day,
     aggregate_by_horizon_bucket,
+    aggregate_by_hour_of_day,
+    calculate_metrics,
+    compute_decision_cutoff,
     compute_error_histogram,
+    compute_errors,
+    forecast_revisions,
+    latest_forecast_at_cutoff,
     recommended_buffer,
     recommended_buffer_expanding_window,
 )
+from app.repository import DataRepository, get_repository
 from app.schemas import (
-    HealthResponse,
-    MetaResponse,
-    TimeseriesPoint,
-    ForecastResponse,
-    ForecastPoint,
-    RevisionItem,
-    ActualsResponse,
-    ActualPoint,
     AccuracySummaryResponse,
+    ActualPoint,
+    ActualsResponse,
     DailyAccuracyItem,
-    HourlyAccuracyItem,
-    HorizonAccuracyItem,
     ErrorHistogramItem,
+    ForecastPoint,
+    ForecastResponse,
+    HealthResponse,
+    HorizonAccuracyItem,
+    HourlyAccuracyItem,
+    MetaResponse,
+    RevisionItem,
+    TimeseriesPoint,
 )
 
 CUTOFF_REGEX = re.compile(r"^(?:[01]\d|2[0-3]):[0-5]\d$")
@@ -67,16 +66,17 @@ app.add_middleware(
 _analytics_cache: Dict[str, Any] = {}
 
 
-def validate_cutoff(cutoff: str = Query("09:00", description="Cutoff time on D-1 in HH:MM (London time)")) -> str:
+def validate_cutoff(
+    cutoff: str = Query("09:00", description="Cutoff time on D-1 in HH:MM (London time)"),
+) -> str:
     """Validate 24-hour HH:MM format."""
     clean = cutoff.strip()
     if not CUTOFF_REGEX.match(clean):
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid cutoff time format '{cutoff}'. Expected 24-hour clock 'HH:MM' (e.g. '09:00' or '11:00')."
+            detail=f"Invalid cutoff time format '{cutoff}'. Expected 24-hour clock 'HH:MM' (e.g. '09:00' or '11:00').",
         )
     return clean
-
 
 
 def validate_delivery_date(
@@ -89,7 +89,7 @@ def validate_delivery_date(
     except ValueError:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid date format '{delivery_date}'. Expected 'YYYY-MM-DD' (e.g. '2026-01-15')."
+            detail=f"Invalid date format '{delivery_date}'. Expected 'YYYY-MM-DD' (e.g. '2026-01-15').",
         )
 
     # Check bounds against actuals repository
@@ -100,7 +100,7 @@ def validate_delivery_date(
     if d < min_date or d > max_date:
         raise HTTPException(
             status_code=400,
-            detail=f"Delivery date '{delivery_date}' is outside available evaluation range ({min_date.isoformat()} to {max_date.isoformat()})."
+            detail=f"Delivery date '{delivery_date}' is outside available evaluation range ({min_date.isoformat()} to {max_date.isoformat()}).",
         )
     return delivery_date.strip()
 
@@ -108,11 +108,7 @@ def validate_delivery_date(
 @app.get("/api/health", response_model=HealthResponse, tags=["System"])
 def get_health():
     """Health check endpoint returning system status and current UTC timestamp."""
-    return HealthResponse(
-        status="ok",
-        version="0.1.0",
-        timestamp=datetime.now(timezone.utc)
-    )
+    return HealthResponse(status="ok", version="0.1.0", timestamp=datetime.now(timezone.utc))
 
 
 @app.get("/api/meta", response_model=MetaResponse, tags=["Metadata"])
@@ -133,9 +129,8 @@ def get_metadata(repo: DataRepository = Depends(get_repository)):
         market="UK Day-Ahead Electricity Market (BMRS)",
         fuel_type="WIND",
         total_actual_periods=len(act_df),
-        total_forecast_versions=len(fc_df)
+        total_forecast_versions=len(fc_df),
     )
-
 
 
 @app.get("/api/forecast", response_model=ForecastResponse, tags=["Trading Desk"])
@@ -153,21 +148,25 @@ def get_forecast(
         return _analytics_cache[cache_key]
 
     fc_df = repo.get_forecasts()
-    act_df = repo.get_actuals()
 
     # 1. Extract hourly latest forecasts at cutoff
+
     hourly_latest = latest_forecast_at_cutoff(fc_df, delivery_date, cutoff_hhmm=cutoff)
     if hourly_latest.empty:
         raise HTTPException(
             status_code=404,
-            detail=f"No forecast versions found for delivery date {delivery_date} published on or before cutoff {cutoff}."
+            detail=f"No forecast versions found for delivery date {delivery_date} published on or before cutoff {cutoff}.",
         )
 
     # 2. Compute dynamic expanding window buffer up to delivery_date
     # Pull errors prior to delivery date to size the buffer
     all_desk_errors = _get_or_compute_all_errors(repo, cutoff)
-    p90_buf = recommended_buffer(all_desk_errors[all_desk_errors["delivery_date"] < delivery_date], quantile=0.90)
-    p95_buf = recommended_buffer(all_desk_errors[all_desk_errors["delivery_date"] < delivery_date], quantile=0.95)
+    p90_buf = recommended_buffer(
+        all_desk_errors[all_desk_errors["delivery_date"] < delivery_date], quantile=0.90
+    )
+    p95_buf = recommended_buffer(
+        all_desk_errors[all_desk_errors["delivery_date"] < delivery_date], quantile=0.95
+    )
 
     if p90_buf == 0.0:
         # Fall back to global evaluation buffer if first day
@@ -178,15 +177,14 @@ def get_forecast(
     points: List[ForecastPoint] = []
     d_target = date.fromisoformat(delivery_date)
 
-    hourly_dict = {
-        row["startTime"].hour: row
-        for _, row in hourly_latest.iterrows()
-    }
+    hourly_dict = {row["startTime"].hour: row for _, row in hourly_latest.iterrows()}
 
     for sp in range(1, 49):
         hour = (sp - 1) // 2
         minute = 30 if (sp % 2 == 0) else 0
-        sp_time = datetime(d_target.year, d_target.month, d_target.day, hour, minute, tzinfo=timezone.utc)
+        sp_time = datetime(
+            d_target.year, d_target.month, d_target.day, hour, minute, tzinfo=timezone.utc
+        )
 
         if hour in hourly_dict:
             hr_row = hourly_dict[hour]
@@ -259,7 +257,7 @@ def get_actuals(
     if act_df.empty:
         raise HTTPException(
             status_code=404,
-            detail=f"No actual outturn records found for delivery date {delivery_date}."
+            detail=f"No actual outturn records found for delivery date {delivery_date}.",
         )
 
     act_sorted = act_df.sort_values("startTime").reset_index(drop=True)
@@ -296,6 +294,7 @@ def _get_or_compute_all_errors(repo: DataRepository, cutoff: str) -> Any:
             desk_forecasts_list.append(d_fc)
 
     import pandas as pd
+
     if desk_forecasts_list:
         combined_fc = pd.concat(desk_forecasts_list, ignore_index=True)
         errors_df = compute_errors(combined_fc, act_df, alignment="hourly")
@@ -321,7 +320,9 @@ def get_accuracy_summary(
 
     errors_df = _get_or_compute_all_errors(repo, cutoff)
     if errors_df.empty:
-        raise HTTPException(status_code=404, detail="No error data available for the specified cutoff.")
+        raise HTTPException(
+            status_code=404, detail="No error data available for the specified cutoff."
+        )
 
     m = calculate_metrics(errors_df)
     buf_p90 = recommended_buffer(errors_df, quantile=0.90)
@@ -330,7 +331,7 @@ def get_accuracy_summary(
     response = AccuracySummaryResponse(
         cutoff=cutoff,
         evaluation_window="2026-01-01 to 2026-01-31 (744 Delivery Hours)",
-        total_delivery_periods=m["count"],
+        total_delivery_periods=int(m["count"]),
         bias_mw=round(m["bias"], 2),
         mae_mw=round(m["mae"], 2),
         rmse_mw=round(m["rmse"], 2),
@@ -365,10 +366,18 @@ def get_accuracy_daily(
         raise HTTPException(status_code=404, detail="No error data available.")
 
     daily_agg = aggregate_by_delivery_day(errors_df)
-    expanding_buf = recommended_buffer_expanding_window(errors_df, quantile=0.90, min_history_days=1)
+    expanding_buf = recommended_buffer_expanding_window(
+        errors_df, quantile=0.90, min_history_days=1
+    )
 
     import pandas as pd
-    merged = pd.merge(daily_agg, expanding_buf[["delivery_date", "recommended_buffer_mw"]], on="delivery_date", how="left")
+
+    merged = pd.merge(
+        daily_agg,
+        expanding_buf[["delivery_date", "recommended_buffer_mw"]],
+        on="delivery_date",
+        how="left",
+    )
     merged["recommended_buffer_mw"] = merged["recommended_buffer_mw"].fillna(0.0)
 
     items = [
@@ -513,8 +522,12 @@ def get_accuracy_timeseries(
             delivery_date=str(row["delivery_date"]),
             hour=int(row["hour"]),
             forecast_mw=round(float(row["forecast_mw"]), 2),
-            actual_mw=round(float(row["actual_mw"]), 2) if "actual_mw" in row and not pd.isna(row["actual_mw"]) else None,
-            error_mw=round(float(row["error_mw"]), 2) if "error_mw" in row and not pd.isna(row["error_mw"]) else None,
+            actual_mw=round(float(row["actual_mw"]), 2)
+            if "actual_mw" in row and not pd.isna(row["actual_mw"])
+            else None,
+            error_mw=round(float(row["error_mw"]), 2)
+            if "error_mw" in row and not pd.isna(row["error_mw"])
+            else None,
             p90_buffer_mw=round(float(buf_p90), 2),
             p90_hedge_mw=round(max(0.0, float(row["forecast_mw"]) - float(buf_p90)), 2),
         )
