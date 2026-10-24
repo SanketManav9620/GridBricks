@@ -66,4 +66,20 @@ This document tracks all explicit assumptions, domain rules, and technical decis
   - **Percentage within $\pm 10\%$**: Fraction of periods where $|\hat{y}_i - y_i| \le 0.10 \times y_i$.
 - **Expanding Window Safety Buffer**: For delivery day $D$, the dynamic safety buffer is sized strictly from historical delivery errors prior to $D$ ($t < D$). This prevents data leakage and simulates live production desk deployment.
 
+---
+
+## 6. API Contracts & Frontend Architecture
+- **48 Half-Hour Settlement Period Alignment**: The `/api/forecast` endpoint outputs exactly 48 half-hour settlement periods (SP 1 to 48) for delivery day D. Because `WINDFOR` is published at hourly resolution, hourly values are mapped to both constituent half-hours (`:00` and `:30`), including `settlementPeriod`, `startTime`, `forecast_mw`, `publishTime`, `horizon_hours`, and risk bands (`risk_band_p90_mw` and `risk_band_p95_mw`).
+- **Validation**:
+  - `cutoff`: strictly validated against regex `^(?:[01]\d|2[0-3]):[0-5]\d$` (24-hour clock `HH:MM`). Default: `"11:00"`.
+  - `delivery_date`: validated against available ingested dates in January 2026 (`2026-01-01` to `2026-02-01`).
+- **Response Caching**: Deterministic responses for `(delivery_date, cutoff)` are cached in-memory with LRU eviction for instant sub-5ms API response latency.
+- **Frontend Stack**: Vite + React 18/19, TypeScript, Tailwind CSS, Lucide icons, TanStack React Query v5, Recharts, React Router v6.
+- **Visual Design System**:
+  - Background: Dark Navy (`#0b132b`, `#111d4a`, `#1c2541`).
+  - Primary / Wind: Vibrant Teal (`#2dd4bf`, `#0d9488`).
+  - Imbalance / Risk / Warnings: Amber & Coral (`#f59e0b`, `#fbbf24`, `#ef4444`).
+  - Grid: 8px spacing system, responsive cards, crisp tabular layouts.
+
+
 

@@ -1,0 +1,994 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "UK Day-Ahead Wind Trading & Analytics API",
+    "description": "Production-grade API providing point-in-time wind forecasts, actuals, accuracy analytics, and dynamic safety buffer sizing for the UK wholesale electricity market.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Get Health",
+        "description": "Health check endpoint returning system status and current UTC timestamp.",
+        "operationId": "get_health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/meta": {
+      "get": {
+        "tags": [
+          "Metadata"
+        ],
+        "summary": "Get Metadata",
+        "description": "Return available delivery dates, default cutoff gate, and dataset statistics.",
+        "operationId": "get_metadata_api_meta_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetaResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/forecast": {
+      "get": {
+        "tags": [
+          "Trading Desk"
+        ],
+        "summary": "Get Forecast",
+        "description": "Get the latest wind forecast available at decision cutoff for all 48 half-hour settlement periods,\nincluding historical revisions and conservative risk hedge bands (P90 and P95).",
+        "operationId": "get_forecast_api_forecast_get",
+        "parameters": [
+          {
+            "name": "delivery_date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Delivery date (YYYY-MM-DD)",
+              "title": "Delivery Date"
+            },
+            "description": "Delivery date (YYYY-MM-DD)"
+          },
+          {
+            "name": "cutoff",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Cutoff time on D-1 in HH:MM (London time)",
+              "default": "11:00",
+              "title": "Cutoff"
+            },
+            "description": "Cutoff time on D-1 in HH:MM (London time)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/actuals": {
+      "get": {
+        "tags": [
+          "Trading Desk"
+        ],
+        "summary": "Get Actuals",
+        "description": "Get actual outturn generation for all 48 half-hour settlement periods on delivery_date.",
+        "operationId": "get_actuals_api_actuals_get",
+        "parameters": [
+          {
+            "name": "delivery_date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Delivery date (YYYY-MM-DD)",
+              "title": "Delivery Date"
+            },
+            "description": "Delivery date (YYYY-MM-DD)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActualsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accuracy/summary": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get Accuracy Summary",
+        "description": "Get holistic accuracy metrics across all January 2026 trading days:\nBias (MBE), MAE, RMSE, WAPE, Percentiles, and empirical Safety Buffers.",
+        "operationId": "get_accuracy_summary_api_accuracy_summary_get",
+        "parameters": [
+          {
+            "name": "cutoff",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Cutoff time on D-1 in HH:MM (London time)",
+              "default": "11:00",
+              "title": "Cutoff"
+            },
+            "description": "Cutoff time on D-1 in HH:MM (London time)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccuracySummaryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accuracy/daily": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get Accuracy Daily",
+        "description": "Get day-by-day accuracy metrics and expanding-window dynamic recommended safety buffer.",
+        "operationId": "get_accuracy_daily_api_accuracy_daily_get",
+        "parameters": [
+          {
+            "name": "cutoff",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Cutoff time on D-1 in HH:MM (London time)",
+              "default": "11:00",
+              "title": "Cutoff"
+            },
+            "description": "Cutoff time on D-1 in HH:MM (London time)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DailyAccuracyItem"
+                  },
+                  "title": "Response Get Accuracy Daily Api Accuracy Daily Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accuracy/by-hour": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get Accuracy By Hour",
+        "description": "Get forecast error profiling grouped by hour of the day (0 to 23 UTC).",
+        "operationId": "get_accuracy_by_hour_api_accuracy_by_hour_get",
+        "parameters": [
+          {
+            "name": "cutoff",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Cutoff time on D-1 in HH:MM (London time)",
+              "default": "11:00",
+              "title": "Cutoff"
+            },
+            "description": "Cutoff time on D-1 in HH:MM (London time)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HourlyAccuracyItem"
+                  },
+                  "title": "Response Get Accuracy By Hour Api Accuracy By Hour Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accuracy/by-horizon": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get Accuracy By Horizon",
+        "description": "Get forecast accuracy breakdown by lead-time horizon buckets (0-6h, 6-12h, 12-24h, 24-48h, 48h+).",
+        "operationId": "get_accuracy_by_horizon_api_accuracy_by_horizon_get",
+        "parameters": [
+          {
+            "name": "cutoff",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Cutoff time on D-1 in HH:MM (London time)",
+              "default": "11:00",
+              "title": "Cutoff"
+            },
+            "description": "Cutoff time on D-1 in HH:MM (London time)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HorizonAccuracyItem"
+                  },
+                  "title": "Response Get Accuracy By Horizon Api Accuracy By Horizon Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/accuracy/distribution": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get Accuracy Distribution",
+        "description": "Get error frequency distribution histogram (Forecast - Actual) for risk profiling.",
+        "operationId": "get_accuracy_distribution_api_accuracy_distribution_get",
+        "parameters": [
+          {
+            "name": "bin_size_mw",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 2000.0,
+              "minimum": 100.0,
+              "description": "Bin width in MW",
+              "default": 500.0,
+              "title": "Bin Size Mw"
+            },
+            "description": "Bin width in MW"
+          },
+          {
+            "name": "cutoff",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Cutoff time on D-1 in HH:MM (London time)",
+              "default": "11:00",
+              "title": "Cutoff"
+            },
+            "description": "Cutoff time on D-1 in HH:MM (London time)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ErrorHistogramItem"
+                  },
+                  "title": "Response Get Accuracy Distribution Api Accuracy Distribution Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccuracySummaryResponse": {
+        "properties": {
+          "cutoff": {
+            "type": "string",
+            "title": "Cutoff"
+          },
+          "evaluation_window": {
+            "type": "string",
+            "title": "Evaluation Window"
+          },
+          "total_delivery_periods": {
+            "type": "integer",
+            "title": "Total Delivery Periods"
+          },
+          "bias_mw": {
+            "type": "number",
+            "title": "Bias Mw"
+          },
+          "mae_mw": {
+            "type": "number",
+            "title": "Mae Mw"
+          },
+          "rmse_mw": {
+            "type": "number",
+            "title": "Rmse Mw"
+          },
+          "wape_pct": {
+            "type": "number",
+            "title": "Wape Pct"
+          },
+          "p50_abs_error_mw": {
+            "type": "number",
+            "title": "P50 Abs Error Mw"
+          },
+          "p90_abs_error_mw": {
+            "type": "number",
+            "title": "P90 Abs Error Mw"
+          },
+          "p95_abs_error_mw": {
+            "type": "number",
+            "title": "P95 Abs Error Mw"
+          },
+          "p90_over_forecast_mw": {
+            "type": "number",
+            "title": "P90 Over Forecast Mw"
+          },
+          "pct_within_10pct": {
+            "type": "number",
+            "title": "Pct Within 10Pct"
+          },
+          "mean_actual_mw": {
+            "type": "number",
+            "title": "Mean Actual Mw"
+          },
+          "mean_forecast_mw": {
+            "type": "number",
+            "title": "Mean Forecast Mw"
+          },
+          "recommended_buffer_p90_mw": {
+            "type": "number",
+            "title": "Recommended Buffer P90 Mw"
+          },
+          "recommended_buffer_p95_mw": {
+            "type": "number",
+            "title": "Recommended Buffer P95 Mw"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cutoff",
+          "evaluation_window",
+          "total_delivery_periods",
+          "bias_mw",
+          "mae_mw",
+          "rmse_mw",
+          "wape_pct",
+          "p50_abs_error_mw",
+          "p90_abs_error_mw",
+          "p95_abs_error_mw",
+          "p90_over_forecast_mw",
+          "pct_within_10pct",
+          "mean_actual_mw",
+          "mean_forecast_mw",
+          "recommended_buffer_p90_mw",
+          "recommended_buffer_p95_mw"
+        ],
+        "title": "AccuracySummaryResponse"
+      },
+      "ActualPoint": {
+        "properties": {
+          "settlementPeriod": {
+            "type": "integer",
+            "maximum": 48.0,
+            "minimum": 1.0,
+            "title": "Settlementperiod"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starttime"
+          },
+          "generation_mw": {
+            "type": "number",
+            "title": "Generation Mw"
+          }
+        },
+        "type": "object",
+        "required": [
+          "settlementPeriod",
+          "startTime",
+          "generation_mw"
+        ],
+        "title": "ActualPoint"
+      },
+      "ActualsResponse": {
+        "properties": {
+          "delivery_date": {
+            "type": "string",
+            "title": "Delivery Date"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/ActualPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "delivery_date",
+          "points"
+        ],
+        "title": "ActualsResponse"
+      },
+      "DailyAccuracyItem": {
+        "properties": {
+          "delivery_date": {
+            "type": "string",
+            "title": "Delivery Date"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "bias": {
+            "type": "number",
+            "title": "Bias"
+          },
+          "mae": {
+            "type": "number",
+            "title": "Mae"
+          },
+          "rmse": {
+            "type": "number",
+            "title": "Rmse"
+          },
+          "wape": {
+            "type": "number",
+            "title": "Wape"
+          },
+          "p90_over_forecast": {
+            "type": "number",
+            "title": "P90 Over Forecast"
+          },
+          "pct_within_10pct": {
+            "type": "number",
+            "title": "Pct Within 10Pct"
+          },
+          "recommended_buffer_mw": {
+            "type": "number",
+            "title": "Recommended Buffer Mw"
+          }
+        },
+        "type": "object",
+        "required": [
+          "delivery_date",
+          "count",
+          "bias",
+          "mae",
+          "rmse",
+          "wape",
+          "p90_over_forecast",
+          "pct_within_10pct",
+          "recommended_buffer_mw"
+        ],
+        "title": "DailyAccuracyItem"
+      },
+      "ErrorHistogramItem": {
+        "properties": {
+          "bin_min": {
+            "type": "number",
+            "title": "Bin Min"
+          },
+          "bin_max": {
+            "type": "number",
+            "title": "Bin Max"
+          },
+          "bin_label": {
+            "type": "string",
+            "title": "Bin Label"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "frequency_pct": {
+            "type": "number",
+            "title": "Frequency Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bin_min",
+          "bin_max",
+          "bin_label",
+          "count",
+          "frequency_pct"
+        ],
+        "title": "ErrorHistogramItem"
+      },
+      "ForecastPoint": {
+        "properties": {
+          "settlementPeriod": {
+            "type": "integer",
+            "maximum": 48.0,
+            "minimum": 1.0,
+            "title": "Settlementperiod",
+            "description": "Half-hour settlement period (1-48)"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starttime",
+            "description": "Target delivery start timestamp (UTC)"
+          },
+          "forecast_mw": {
+            "type": "number",
+            "title": "Forecast Mw",
+            "description": "Day-ahead forecasted generation in MW"
+          },
+          "publishTime": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Publishtime",
+            "description": "Publication timestamp of this forecast run (UTC)"
+          },
+          "horizon_hours": {
+            "type": "number",
+            "title": "Horizon Hours",
+            "description": "Forecast horizon/lead time in hours"
+          },
+          "risk_band_p90_mw": {
+            "type": "number",
+            "title": "Risk Band P90 Mw",
+            "description": "Conservative hedge generation (Forecast - P90 buffer)"
+          },
+          "risk_band_p95_mw": {
+            "type": "number",
+            "title": "Risk Band P95 Mw",
+            "description": "High-confidence hedge generation (Forecast - P95 buffer)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "settlementPeriod",
+          "startTime",
+          "forecast_mw",
+          "publishTime",
+          "horizon_hours",
+          "risk_band_p90_mw",
+          "risk_band_p95_mw"
+        ],
+        "title": "ForecastPoint"
+      },
+      "ForecastResponse": {
+        "properties": {
+          "delivery_date": {
+            "type": "string",
+            "title": "Delivery Date"
+          },
+          "cutoff": {
+            "type": "string",
+            "title": "Cutoff"
+          },
+          "cutoff_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Cutoff Time"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          },
+          "revisions": {
+            "items": {
+              "$ref": "#/components/schemas/RevisionItem"
+            },
+            "type": "array",
+            "title": "Revisions"
+          },
+          "p90_buffer_mw": {
+            "type": "number",
+            "title": "P90 Buffer Mw"
+          },
+          "p95_buffer_mw": {
+            "type": "number",
+            "title": "P95 Buffer Mw"
+          }
+        },
+        "type": "object",
+        "required": [
+          "delivery_date",
+          "cutoff",
+          "cutoff_time",
+          "points",
+          "revisions",
+          "p90_buffer_mw",
+          "p95_buffer_mw"
+        ],
+        "title": "ForecastResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "ok"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "default": "0.1.0"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "timestamp"
+        ],
+        "title": "HealthResponse"
+      },
+      "HorizonAccuracyItem": {
+        "properties": {
+          "horizon_bucket": {
+            "type": "string",
+            "title": "Horizon Bucket"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "bias": {
+            "type": "number",
+            "title": "Bias"
+          },
+          "mae": {
+            "type": "number",
+            "title": "Mae"
+          },
+          "rmse": {
+            "type": "number",
+            "title": "Rmse"
+          },
+          "wape": {
+            "type": "number",
+            "title": "Wape"
+          },
+          "p90_over_forecast": {
+            "type": "number",
+            "title": "P90 Over Forecast"
+          }
+        },
+        "type": "object",
+        "required": [
+          "horizon_bucket",
+          "count",
+          "bias",
+          "mae",
+          "rmse",
+          "wape",
+          "p90_over_forecast"
+        ],
+        "title": "HorizonAccuracyItem"
+      },
+      "HourlyAccuracyItem": {
+        "properties": {
+          "hour": {
+            "type": "integer",
+            "title": "Hour"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "bias": {
+            "type": "number",
+            "title": "Bias"
+          },
+          "mae": {
+            "type": "number",
+            "title": "Mae"
+          },
+          "rmse": {
+            "type": "number",
+            "title": "Rmse"
+          },
+          "wape": {
+            "type": "number",
+            "title": "Wape"
+          },
+          "p90_over_forecast": {
+            "type": "number",
+            "title": "P90 Over Forecast"
+          },
+          "pct_within_10pct": {
+            "type": "number",
+            "title": "Pct Within 10Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hour",
+          "count",
+          "bias",
+          "mae",
+          "rmse",
+          "wape",
+          "p90_over_forecast",
+          "pct_within_10pct"
+        ],
+        "title": "HourlyAccuracyItem"
+      },
+      "MetaResponse": {
+        "properties": {
+          "min_delivery_date": {
+            "type": "string",
+            "title": "Min Delivery Date"
+          },
+          "max_delivery_date": {
+            "type": "string",
+            "title": "Max Delivery Date"
+          },
+          "available_dates": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Available Dates"
+          },
+          "default_cutoff": {
+            "type": "string",
+            "title": "Default Cutoff",
+            "default": "11:00"
+          },
+          "market": {
+            "type": "string",
+            "title": "Market",
+            "default": "UK Day-Ahead Electricity Market (BMRS)"
+          },
+          "fuel_type": {
+            "type": "string",
+            "title": "Fuel Type",
+            "default": "WIND"
+          },
+          "total_actual_periods": {
+            "type": "integer",
+            "title": "Total Actual Periods"
+          },
+          "total_forecast_versions": {
+            "type": "integer",
+            "title": "Total Forecast Versions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "min_delivery_date",
+          "max_delivery_date",
+          "available_dates",
+          "total_actual_periods",
+          "total_forecast_versions"
+        ],
+        "title": "MetaResponse"
+      },
+      "RevisionItem": {
+        "properties": {
+          "publishTime": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Publishtime"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starttime"
+          },
+          "forecast_mw": {
+            "type": "number",
+            "title": "Forecast Mw"
+          },
+          "horizon_hours": {
+            "type": "number",
+            "title": "Horizon Hours"
+          }
+        },
+        "type": "object",
+        "required": [
+          "publishTime",
+          "startTime",
+          "forecast_mw",
+          "horizon_hours"
+        ],
+        "title": "RevisionItem"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
