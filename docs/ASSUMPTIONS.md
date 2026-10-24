@@ -47,3 +47,23 @@ This document tracks all explicit assumptions, domain rules, and technical decis
   - `DataRepository` maintains cached, immutable DataFrames loaded lazily on first access.
   - Environment variable `ELEXON_LIVE_FALLBACK=true` (or `false` by default) allows fallback to live API fetch if local snapshot files are absent or live data is explicitly requested.
 
+---
+
+## 5. Analytics & Buffer Sizing Mechanics
+- **Decision Cutoff Timestamp**: The auction gate cutoff timestamp is computed as `(delivery_date - 1 day)` at `cutoff_hhmm` in `Europe/London` timezone, then converted to UTC. Any forecast with `publishTime > cutoff` is strictly excluded to prevent look-ahead bias.
+- **Hourly vs. Half-Hourly Alignment**: `WINDFOR` is hourly. By default, `FUELHH` actuals are aggregated to hourly mean ($(\text{SP}_1 + \text{SP}_2)/2$).
+- **Error Sign Convention**:
+  $$\text{Error} = \text{Forecast} - \text{Actual} = \hat{y} - y$$
+  - $\text{Error} > 0$: Over-forecast (generation shortfall; trading desk sold more energy than produced, resulting in imbalance penalties at System Buy Price).
+  - $\text{Error} < 0$: Under-forecast (generation surplus; spill energy cashed out at System Sell Price).
+- **Core Metrics Formulations**:
+  - **Bias (MBE)**: $\frac{1}{N}\sum (\hat{y}_i - y_i)$
+  - **MAE**: $\frac{1}{N}\sum |\hat{y}_i - y_i|$
+  - **RMSE**: $\sqrt{\frac{1}{N}\sum (\hat{y}_i - y_i)^2}$
+  - **WAPE**: $\frac{\sum |\hat{y}_i - y_i|}{\sum y_i}$
+  - **P50 / P90 / P95 Absolute Error**: Empirical percentiles of $|\hat{y}_i - y_i|$.
+  - **P90 Over-Forecast Error**: 90th percentile of positive forecast shortfalls $\max(0, \hat{y}_i - y_i)$ (or error quantile).
+  - **Percentage within $\pm 10\%$**: Fraction of periods where $|\hat{y}_i - y_i| \le 0.10 \times y_i$.
+- **Expanding Window Safety Buffer**: For delivery day $D$, the dynamic safety buffer is sized strictly from historical delivery errors prior to $D$ ($t < D$). This prevents data leakage and simulates live production desk deployment.
+
+
