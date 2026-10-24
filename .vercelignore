@@ -1,0 +1,11 @@
+# Vercel deployment exclusions
+.git
+.github
+node_modules
+frontend/node_modules
+backend/.pytest_cache
+backend/.mypy_cache
+backend/.ruff_cache
+backend/tests
+docker-compose.yml
+docs/screenshots
