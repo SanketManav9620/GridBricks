@@ -24,7 +24,7 @@ def test_meta_endpoint():
     resp = client.get("/api/meta")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["default_cutoff"] == "11:00"
+    assert data["default_cutoff"] == "09:00"
     assert data["fuel_type"] == "WIND"
     assert "2026-01-15" in data["available_dates"]
     assert data["total_actual_periods"] > 0
@@ -110,3 +110,15 @@ def test_accuracy_distribution_endpoint():
     assert len(data) > 0
     assert "bin_min" in data[0]
     assert "frequency_pct" in data[0]
+
+
+def test_accuracy_timeseries_endpoint():
+    resp = client.get("/api/accuracy/timeseries", params={"cutoff": "09:00"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) > 0
+    assert "startTime" in data[0]
+    assert "forecast_mw" in data[0]
+    assert "actual_mw" in data[0]
+    assert "p90_hedge_mw" in data[0]
+

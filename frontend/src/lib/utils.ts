@@ -46,3 +46,13 @@ export function formatDateLabel(dateStr: string): string {
     return dateStr;
   }
 }
+
+export function formatDateTimeUTC(isoString: string): string {
+  try {
+    const d = new Date(isoString);
+    return d.toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
+  } catch {
+    return isoString;
+  }
+}
+

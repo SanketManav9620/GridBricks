@@ -12,6 +12,7 @@ export const queryKeys = {
   accuracyByHorizon: (cutoff: string) => ['accuracy', 'by-horizon', cutoff] as const,
   accuracyDistribution: (cutoff: string, binSize: number) =>
     ['accuracy', 'distribution', cutoff, binSize] as const,
+  accuracyTimeseries: (cutoff: string) => ['accuracy', 'timeseries', cutoff] as const,
 };
 
 export function useMeta() {
@@ -80,6 +81,15 @@ export function useAccuracyDistribution(cutoff: string, binSize: number = 500) {
   return useQuery({
     queryKey: queryKeys.accuracyDistribution(cutoff, binSize),
     queryFn: () => apiClient.getAccuracyDistribution(cutoff, binSize),
+    enabled: Boolean(cutoff),
+    staleTime: 1000 * 60 * 10,
+  });
+}
+
+export function useAccuracyTimeseries(cutoff: string) {
+  return useQuery({
+    queryKey: queryKeys.accuracyTimeseries(cutoff),
+    queryFn: () => apiClient.getAccuracyTimeseries(cutoff),
     enabled: Boolean(cutoff),
     staleTime: 1000 * 60 * 10,
   });

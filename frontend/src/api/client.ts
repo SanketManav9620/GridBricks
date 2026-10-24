@@ -8,7 +8,9 @@ import {
   HourlyAccuracyItem,
   HorizonAccuracyItem,
   ErrorHistogramItem,
+  TimeseriesPoint,
 } from '@/types/api';
+
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -70,4 +72,7 @@ export const apiClient = {
     request<HorizonAccuracyItem[]>('/accuracy/by-horizon', { cutoff }),
   getAccuracyDistribution: (cutoff: string, binSize: number = 500) =>
     request<ErrorHistogramItem[]>('/accuracy/distribution', { cutoff, bin_size_mw: binSize }),
+  getAccuracyTimeseries: (cutoff: string) =>
+    request<TimeseriesPoint[]>('/accuracy/timeseries', { cutoff }),
 };
+

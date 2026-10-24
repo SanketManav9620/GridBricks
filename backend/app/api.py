@@ -9,6 +9,7 @@ import re
 from datetime import datetime, date, timedelta, timezone
 from typing import List, Optional, Dict, Any
 from functools import lru_cache
+import pandas as pd
 
 from fastapi import FastAPI, Query, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,6 +31,7 @@ from app.analytics import (
 from app.schemas import (
     HealthResponse,
     MetaResponse,
+    TimeseriesPoint,
     ForecastResponse,
     ForecastPoint,
     RevisionItem,
@@ -65,15 +67,16 @@ app.add_middleware(
 _analytics_cache: Dict[str, Any] = {}
 
 
-def validate_cutoff(cutoff: str = Query("11:00", description="Cutoff time on D-1 in HH:MM (London time)")) -> str:
+def validate_cutoff(cutoff: str = Query("09:00", description="Cutoff time on D-1 in HH:MM (London time)")) -> str:
     """Validate 24-hour HH:MM format."""
     clean = cutoff.strip()
     if not CUTOFF_REGEX.match(clean):
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid cutoff time format '{cutoff}'. Expected 24-hour clock 'HH:MM' (e.g. '11:00' or '12:30')."
+            detail=f"Invalid cutoff time format '{cutoff}'. Expected 24-hour clock 'HH:MM' (e.g. '09:00' or '11:00')."
         )
     return clean
+
 
 
 def validate_delivery_date(
@@ -126,12 +129,13 @@ def get_metadata(repo: DataRepository = Depends(get_repository)):
         min_delivery_date=jan_dates[0] if jan_dates else unique_dates[0],
         max_delivery_date=jan_dates[-1] if jan_dates else unique_dates[-1],
         available_dates=jan_dates if jan_dates else unique_dates,
-        default_cutoff="11:00",
+        default_cutoff="09:00",
         market="UK Day-Ahead Electricity Market (BMRS)",
         fuel_type="WIND",
         total_actual_periods=len(act_df),
         total_forecast_versions=len(fc_df)
     )
+
 
 
 @app.get("/api/forecast", response_model=ForecastResponse, tags=["Trading Desk"])
@@ -476,6 +480,45 @@ def get_accuracy_distribution(
             frequency_pct=round(float(row["frequency_pct"]), 2),
         )
         for _, row in hist_df.iterrows()
+    ]
+
+    _analytics_cache[cache_key] = items
+    return items
+
+
+@app.get("/api/accuracy/timeseries", response_model=List[TimeseriesPoint], tags=["Analytics"])
+def get_accuracy_timeseries(
+    cutoff: str = Depends(validate_cutoff),
+    repo: DataRepository = Depends(get_repository),
+):
+    """
+    Get full January 2026 hourly timeseries of forecasts vs actuals at the specified cutoff
+    for month-wide trajectory exploration and brush zooming.
+    """
+    cache_key = f"timeseries_{cutoff}"
+    if cache_key in _analytics_cache:
+        return _analytics_cache[cache_key]
+
+    errors_df = _get_or_compute_all_errors(repo, cutoff)
+    if errors_df.empty:
+        raise HTTPException(status_code=404, detail="No timeseries data available.")
+
+    buf_p90 = recommended_buffer(errors_df, quantile=0.90)
+
+    # Sort chronologically by startTime
+    sorted_df = errors_df.sort_values("startTime").reset_index(drop=True)
+    items = [
+        TimeseriesPoint(
+            startTime=row["startTime"],
+            delivery_date=str(row["delivery_date"]),
+            hour=int(row["hour"]),
+            forecast_mw=round(float(row["forecast_mw"]), 2),
+            actual_mw=round(float(row["actual_mw"]), 2) if "actual_mw" in row and not pd.isna(row["actual_mw"]) else None,
+            error_mw=round(float(row["error_mw"]), 2) if "error_mw" in row and not pd.isna(row["error_mw"]) else None,
+            p90_buffer_mw=round(float(buf_p90), 2),
+            p90_hedge_mw=round(max(0.0, float(row["forecast_mw"]) - float(buf_p90)), 2),
+        )
+        for _, row in sorted_df.iterrows()
     ]
 
     _analytics_cache[cache_key] = items

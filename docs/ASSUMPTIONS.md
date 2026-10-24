@@ -81,5 +81,15 @@ This document tracks all explicit assumptions, domain rules, and technical decis
   - Imbalance / Risk / Warnings: Amber & Coral (`#f59e0b`, `#fbbf24`, `#ef4444`).
   - Grid: 8px spacing system, responsive cards, crisp tabular layouts.
 
+---
+
+## 7. Decision Desk & Accuracy Analytics UX Specifications
+- **Default Auction Cutoff**: Updated to `09:00` London time on D-1, representing the morning trading desk information state prior to EPEX/N2EX auction closure.
+- **Decision vs. Back-Test Separation**: Outturn actuals on the Day-Ahead Forecast page are concealed by default and revealed only when the user toggles "Reveal Actual (Back-test)". This ensures a realistic decision desk environment where actuals are unknown at decision time.
+- **Risk-Adjusted Volume**: Sized as the safe hedge volume ($\text{Forecast} - \text{P90 Buffer}$), ensuring at least 90% confidence that physical outturn satisfies the traded volume.
+- **Monthly Timeseries Brush**: The whole-month forecast vs. actual view displays all 744 hours of January 2026 with an interactive Recharts brush component for custom date-range zooming and granular inspection.
+- **CSV Data Export**: The 48-period granular table on the Forecast page provides client-side CSV generation with deterministic headers and ISO UTC timestamps.
+
+
 
 

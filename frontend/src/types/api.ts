@@ -116,3 +116,15 @@ export interface ErrorHistogramItem {
   count: number;
   frequency_pct: number;
 }
+
+export interface TimeseriesPoint {
+  startTime: string;
+  delivery_date: string;
+  hour: number;
+  forecast_mw: number;
+  actual_mw: number | null;
+  error_mw: number | null;
+  p90_buffer_mw: number;
+  p90_hedge_mw: number;
+}
+

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -10,7 +10,18 @@ import {
   CartesianGrid,
   Legend,
 } from 'recharts';
-import { Wind, ShieldAlert, Zap, TrendingUp, Eye, EyeOff } from 'lucide-react';
+import {
+  Wind,
+  ShieldAlert,
+  Clock,
+  TrendingUp,
+  Eye,
+  EyeOff,
+  Download,
+  History,
+  Sparkles,
+} from 'lucide-react';
+
 import { useMeta, useForecast, useActuals } from '@/api/hooks';
 import { KpiCard } from '@/components/KpiCard';
 import { ChartCard } from '@/components/ChartCard';
@@ -18,15 +29,17 @@ import { DateStepper } from '@/components/DateStepper';
 import { CutoffSelect } from '@/components/CutoffSelect';
 import { SkeletonKpiGrid, SkeletonChart } from '@/components/SkeletonLoader';
 import { ErrorState } from '@/components/ErrorState';
-import { formatMW, formatTimeHHMM } from '@/lib/utils';
+import { EmptyState } from '@/components/EmptyState';
+import { formatMW, formatTimeHHMM, formatDateTimeUTC } from '@/lib/utils';
 
 export const DayAheadDeskPage: React.FC = () => {
   const { data: meta, isLoading: metaLoading } = useMeta();
 
+  // Requirements: Cutoff control defaulting to 09:00; date stepper limited to supported delivery days
   const [deliveryDate, setDeliveryDate] = useState<string>('2026-01-15');
-  const [cutoff, setCutoff] = useState<string>('11:00');
+  const [cutoff, setCutoff] = useState<string>('09:00');
   const [showRevisions, setShowRevisions] = useState<boolean>(false);
-  const [showTable, setShowTable] = useState<boolean>(false);
+  const [revealActual, setRevealActual] = useState<boolean>(false);
 
   // Sync initial date from metadata once available
   React.useEffect(() => {
@@ -44,7 +57,153 @@ export const DayAheadDeskPage: React.FC = () => {
 
   const { data: actualsData } = useActuals(deliveryDate);
 
-  if (metaLoading || (!forecastData && forecastLoading)) {
+  // Combine forecast points, revisions, and optional actuals
+  const points = forecastData?.points || [];
+  const actuals = actualsData?.points || [];
+  const actualsMap = useMemo(() => {
+    return new Map(actuals.map((a) => [a.settlementPeriod, a.generation_mw]));
+  }, [actuals]);
+
+  // Extract up to 3 distinct earlier revision trajectories for the fan line toggle
+  const earlierRevisionRuns = useMemo(() => {
+    if (!forecastData?.revisions?.length) return [];
+    const runsMap = new Map<string, Map<number, number>>();
+
+    forecastData.revisions.forEach((rev) => {
+      const pubIso = rev.publishTime;
+      if (!runsMap.has(pubIso)) {
+        runsMap.set(pubIso, new Map<number, number>());
+      }
+      const dt = new Date(rev.startTime);
+      const hour = dt.getUTCHours();
+      runsMap.get(pubIso)!.set(hour, rev.forecast_mw);
+    });
+
+    const sortedPubTimes = Array.from(runsMap.keys()).sort();
+    // Exclude the latest run (already plotted) and take the latest 3 earlier runs
+    const earlierPubTimes = sortedPubTimes.slice(0, -1).slice(-3);
+
+    return earlierPubTimes.map((pubTime, idx) => ({
+      key: `rev_${idx}`,
+      publishTime: pubTime,
+      label: `Prior Run ${formatTimeHHMM(pubTime)} UTC`,
+      hourMap: runsMap.get(pubTime)!,
+    }));
+  }, [forecastData?.revisions]);
+
+  // Build chart dataset with 48 half-hour settlement periods
+  const chartData = useMemo(() => {
+    return points.map((p) => {
+      const actMW = actualsMap.get(p.settlementPeriod);
+      const errorMW = actMW !== undefined ? p.forecast_mw - actMW : null;
+      const hour = (p.settlementPeriod - 1) >> 1;
+
+      const row: Record<string, any> = {
+        settlementPeriod: p.settlementPeriod,
+        startTimeUtc: p.startTime,
+        publishedAtUtc: p.publishTime,
+        timeLabel: `SP${p.settlementPeriod} (${formatTimeHHMM(p.startTime)})`,
+        timeOnly: formatTimeHHMM(p.startTime),
+        forecast: p.forecast_mw,
+        actual: actMW ?? null,
+        p90Hedge: p.risk_band_p90_mw,
+        p95Hedge: p.risk_band_p95_mw,
+        riskBand: [p.risk_band_p90_mw, p.forecast_mw],
+        bufferMw: Math.max(0, p.forecast_mw - p.risk_band_p90_mw),
+        horizon: p.horizon_hours,
+        error: errorMW,
+      };
+
+      // Attach earlier revision versions if present
+      earlierRevisionRuns.forEach((rev) => {
+        row[rev.key] = rev.hourMap.get(hour) ?? null;
+      });
+
+      return row;
+    });
+  }, [points, actualsMap, earlierRevisionRuns]);
+
+  // Aggregate KPI summary metrics
+  const meanForecast = useMemo(() => {
+    if (!points.length) return 0;
+    return points.reduce((acc, p) => acc + p.forecast_mw, 0) / points.length;
+  }, [points]);
+
+  const peakPoint = useMemo(() => {
+    if (!points.length) return { forecast_mw: 0, settlementPeriod: 1, startTime: '' };
+    return points.reduce(
+      (max, p) => (p.forecast_mw > max.forecast_mw ? p : max),
+      points[0]
+    );
+  }, [points]);
+
+  const p90Buffer = forecastData?.p90_buffer_mw ?? 0;
+  const riskAdjustedAverage = Math.max(0, meanForecast - p90Buffer);
+
+  // Latest model publication timestamp used
+  const latestPublishTime = points[0]?.publishTime
+    ? formatTimeHHMM(points[0].publishTime) + ' UTC'
+    : '—';
+
+  // Plain-English insight line generator
+  const insightText = useMemo(() => {
+    if (!points.length) return '';
+    return `At ${cutoff} London (D-1), latest available NWP model was published at ${latestPublishTime}. Expected wind generation averages ${formatMW(
+      meanForecast
+    )}, peaking at ${formatMW(peakPoint.forecast_mw)} (SP ${
+      peakPoint.settlementPeriod
+    }). Applying the recommended ${formatMW(
+      p90Buffer
+    )} safety buffer hedges against systematic over-forecasting shortfalls with 90% confidence.`;
+  }, [cutoff, latestPublishTime, meanForecast, peakPoint, p90Buffer, points.length]);
+
+  // CSV export handler for the 48-period data table
+  const handleDownloadCsv = () => {
+    if (!chartData.length) return;
+    const headers = [
+      'Settlement Period',
+      'Delivery Time (UTC)',
+      'Forecast (MW)',
+      'Published At (UTC)',
+      'Horizon (Hours)',
+      'Buffer (MW)',
+      'Risk-Adjusted Hedge (MW)',
+      ...(revealActual ? ['Actual Generation (MW)', 'Error (MW)'] : []),
+    ];
+
+    const rows = chartData.map((r) => [
+      r.settlementPeriod,
+      r.timeOnly,
+      r.forecast.toFixed(1),
+      formatDateTimeUTC(r.publishedAtUtc),
+      r.horizon.toFixed(2),
+      r.bufferMw.toFixed(1),
+      r.p90Hedge.toFixed(1),
+      ...(revealActual
+        ? [
+            r.actual !== null ? r.actual.toFixed(1) : '',
+            r.error !== null ? r.error.toFixed(1) : '',
+          ]
+        : []),
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute(
+      'download',
+      `wind_forecast_desk_${deliveryDate}_cutoff_${cutoff.replace(':', '')}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // 1. Loading State
+  if (metaLoading || (forecastLoading && !forecastData)) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
@@ -57,68 +216,58 @@ export const DayAheadDeskPage: React.FC = () => {
     );
   }
 
+  // 2. Error State
   if (forecastError) {
     return (
       <ErrorState
-        title="Error loading forecast data"
-        message={forecastError instanceof Error ? forecastError.message : 'Failed to query API.'}
+        title="Failed to load trading desk forecast"
+        message={
+          forecastError instanceof Error
+            ? forecastError.message
+            : 'An unexpected error occurred while querying the decision backend.'
+        }
         onRetry={refetchForecast}
       />
     );
   }
 
-  // Combine forecast points and actual points by settlementPeriod
-  const points = forecastData?.points || [];
-  const actuals = actualsData?.points || [];
-  const actualsMap = new Map(actuals.map((a) => [a.settlementPeriod, a.generation_mw]));
+  // 3. Empty State
+  if (!points.length) {
+    return (
+      <EmptyState
+        title="No Forecast Records Found"
+        description={`No wind forecast runs were published prior to the ${cutoff} cutoff for delivery date ${deliveryDate}.`}
+        action={
+          <button
+            onClick={() => setCutoff('09:00')}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-500 text-white"
+          >
+            Reset to Default (09:00 London)
+          </button>
+        }
+      />
+    );
+  }
 
-  const chartData = points.map((p) => {
-    const actMW = actualsMap.get(p.settlementPeriod);
-    const errorMW = actMW !== undefined ? p.forecast_mw - actMW : null;
-    return {
-      settlementPeriod: p.settlementPeriod,
-      timeLabel: `SP${p.settlementPeriod} (${formatTimeHHMM(p.startTime)})`,
-      timeOnly: formatTimeHHMM(p.startTime),
-      forecast: p.forecast_mw,
-      actual: actMW ?? null,
-      p90Hedge: p.risk_band_p90_mw,
-      p95Hedge: p.risk_band_p95_mw,
-      horizon: p.horizon_hours,
-      error: errorMW,
-    };
-  });
-
-  // Calculate day summary metrics
-  const meanForecast = points.length
-    ? points.reduce((acc, p) => acc + p.forecast_mw, 0) / points.length
-    : 0;
-  const validActuals = actuals.filter((a) => a.generation_mw !== null);
-  const meanActual = validActuals.length
-    ? validActuals.reduce((acc, a) => acc + a.generation_mw, 0) / validActuals.length
-    : null;
-  const p90Buffer = forecastData?.p90_buffer_mw ?? 0;
-  const p95Buffer = forecastData?.p95_buffer_mw ?? 0;
-
-  // Max peak generation
-  const peakPoint = points.reduce(
-    (max, p) => (p.forecast_mw > max.forecast_mw ? p : max),
-    points[0] || { forecast_mw: 0, settlementPeriod: 1 }
-  );
 
   return (
-    <div className="space-y-6">
-      {/* Action Header & Date/Cutoff Controls */}
+    <div className="space-y-6 animate-fadeIn">
+      {/* Top Header & Interactive Controls */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-slate-800/80">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-white flex items-center space-x-2">
-            <span>Day-Ahead Decision Dashboard</span>
+            <span>Day-Ahead Decision Desk</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/20 font-mono">
+              National Wind (GB)
+            </span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Evaluating National Wind volume available before auction close on Day D-1 with
-            quantitative shortfall buffers.
+            Point-in-time forecast selected strictly prior to auction cutoff. Calibrated safety buffer
+            hedges cash-out imbalance penalties.
           </p>
         </div>
 
+        {/* Date Stepper & Cutoff Controls */}
         <div className="flex flex-wrap items-center gap-3">
           <DateStepper
             currentDate={deliveryDate}
@@ -129,85 +278,102 @@ export const DayAheadDeskPage: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
+      {/* 4 Required KPIs: Average, Peak, Publish Time Used, Risk-Adjusted Average */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          title="Day-Ahead Forecast"
+          title="Average Forecast"
           value={formatMW(meanForecast)}
-          subtitle="Mean national wind generation"
-          tooltip="Average forecasted wind power generation across all 48 half-hour settlement periods, published prior to D-1 cutoff."
+          subtitle="Mean Day-Ahead Wind Volume"
+          tooltip="Average forecasted national wind generation across all 48 half-hour settlement periods, published prior to D-1 decision gate."
           icon={Wind}
           variant="teal"
         />
 
         <KpiCard
-          title="Outturn Actual"
-          value={formatMW(meanActual)}
-          subtitle={
-            meanActual
-              ? `${(meanForecast - meanActual).toFixed(0)} MW deviation`
-              : 'Pending settlement'
-          }
-          tooltip="Actual half-hourly wind generation outturn aggregated from BMRS FUELHH."
-          icon={Zap}
-          variant={meanActual ? (meanForecast > meanActual ? 'amber' : 'teal') : 'default'}
+          title="Peak Forecast"
+          value={formatMW(peakPoint.forecast_mw)}
+          subtitle={`Peak at SP ${peakPoint.settlementPeriod} (${formatTimeHHMM(
+            peakPoint.startTime
+          )} UTC)`}
+          tooltip="Maximum anticipated wind power generation period during the 24-hour delivery day."
+          icon={TrendingUp}
+          variant="blue"
         />
 
         <KpiCard
-          title="Recommended P90 Buffer"
-          value={formatMW(p90Buffer)}
-          subtitle={`P95 High-Risk Buffer: ${formatMW(p95Buffer)}`}
-          tooltip="Conservative deduction from raw forecast based on 90th percentile historical over-forecast shortfall. Selling (Forecast - Buffer) ensures 90% confidence against imbalances."
+          title="Publish Time Used"
+          value={latestPublishTime}
+          subtitle={`Gate Cutoff: ${cutoff} London (D-1)`}
+          tooltip="Exact publication timestamp of the most recent Elexon WINDFOR dataset available prior to the specified auction cutoff."
+          icon={Clock}
+          variant="default"
+          badge="D-1 Model"
+        />
+
+        <KpiCard
+          title="Risk-Adjusted Average"
+          value={formatMW(riskAdjustedAverage)}
+          subtitle={`P90 Buffer: -${formatMW(p90Buffer)}`}
+          tooltip="Safe auction bid volume after applying the quantitative 90th percentile historical over-forecast shortfall deduction (Forecast - Buffer)."
           icon={ShieldAlert}
           variant="amber"
           badge="90% Confidence"
         />
-
-        <KpiCard
-          title="Peak Period Forecast"
-          value={formatMW(peakPoint?.forecast_mw)}
-          subtitle={`Peak at SP ${peakPoint?.settlementPeriod} (${formatTimeHHMM(peakPoint?.startTime || '')})`}
-          tooltip="Maximum expected wind generation half-hour during the delivery day."
-          icon={TrendingUp}
-          variant="blue"
-        />
       </div>
 
-      {/* Main Delivery Profile Chart */}
+      {/* Short Plain-English Insight Line Above the Main Chart */}
+      <div className="rounded-lg border border-teal-900/40 bg-teal-950/20 px-4 py-3 text-xs text-teal-200/90 flex items-start space-x-3 backdrop-blur-sm">
+        <Sparkles className="w-4 h-4 text-teal-400 mt-0.5 flex-shrink-0" />
+        <p className="leading-relaxed">
+          <strong className="text-teal-300 font-semibold">Desk Insight: </strong>
+          {insightText}
+        </p>
+      </div>
+
+      {/* Main Delivery Profile Chart with Shaded Risk Band, Faint Revisions, and Back-Test Overlay */}
       <ChartCard
         title="Day-Ahead Delivery Generation Profile (48 Half-Hours)"
-        subtitle={`Delivery Date: ${deliveryDate} | D-1 Cutoff: ${cutoff} London | Horizon: ~14.5h to 38.5h`}
-        tooltip="Physical profile across 48 half-hourly settlement periods on Day D. The teal line represents the latest available forecast at D-1 decision time. The amber and shaded area indicates the safe bid volume after applying safety buffers."
+        subtitle={`Delivery Date: ${deliveryDate} | Cutoff: ${cutoff} London | Lead Time: ~15h to 39h`}
+        tooltip="Physical generation trajectory for physical delivery day D. The teal line represents the latest available forecast at decision cutoff. The shaded amber area indicates the P90 downside risk band. Use the toggles to inspect model revisions or reveal historical actuals."
         actions={
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Earlier Versions Toggle */}
             <button
+              id="toggle-revisions-button"
               onClick={() => setShowRevisions(!showRevisions)}
-              className={`px-2.5 py-1 rounded text-xs font-semibold flex items-center space-x-1 border transition-colors ${
+              className={`px-2.5 py-1.5 rounded text-xs font-medium flex items-center space-x-1.5 border transition-all ${
                 showRevisions
-                  ? 'bg-amber-950/60 border-amber-500/40 text-amber-300'
-                  : 'bg-navy-800 border-slate-700 text-slate-400 hover:text-slate-200'
+                  ? 'bg-navy-700 border-slate-500 text-slate-100 shadow-sm'
+                  : 'bg-navy-800/80 border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-600'
               }`}
             >
-              {showRevisions ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              <span>{showRevisions ? 'Hide Revisions' : 'Show Revisions'}</span>
+              <History className="w-3.5 h-3.5" />
+              <span>{showRevisions ? 'Hide Earlier Runs' : 'Show Earlier Runs'}</span>
             </button>
 
+            {/* Reveal Actual (Back-Test) Toggle */}
             <button
-              onClick={() => setShowTable(!showTable)}
-              className="px-2.5 py-1 rounded text-xs font-semibold bg-navy-800 border border-slate-700 text-slate-300 hover:bg-navy-700 transition-colors"
+              id="reveal-actual-button"
+              onClick={() => setRevealActual(!revealActual)}
+              className={`px-2.5 py-1.5 rounded text-xs font-medium flex items-center space-x-1.5 border transition-all ${
+                revealActual
+                  ? 'bg-sky-950/70 border-sky-500/50 text-sky-300 shadow-sm'
+                  : 'bg-navy-800/80 border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-600'
+              }`}
             >
-              {showTable ? 'Hide Table' : 'Table View'}
+              {revealActual ? <EyeOff className="w-3.5 h-3.5 text-sky-400" /> : <Eye className="w-3.5 h-3.5" />}
+              <span>{revealActual ? 'Hide Actuals (Back-Test)' : 'Reveal Actual (Back-Test)'}</span>
             </button>
           </div>
         }
         height="h-96"
       >
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
+          <ComposedChart data={chartData} margin={{ top: 15, right: 20, left: 10, bottom: 20 }}>
             <defs>
-              <linearGradient id="p90HedgeGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#14b8a6" stopOpacity={0.02} />
+              <linearGradient id="riskBandFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.22} />
+                <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.05} />
               </linearGradient>
             </defs>
 
@@ -234,188 +400,214 @@ export const DayAheadDeskPage: React.FC = () => {
                 if (!active || !payload?.length) return null;
                 const d = payload[0].payload;
                 return (
-                  <div className="bg-navy-900 border border-slate-700 p-3 rounded-lg shadow-xl text-xs space-y-1.5 backdrop-blur-md">
-                    <p className="font-semibold text-white border-b border-slate-800 pb-1">
-                      {d.timeLabel}
+                  <div className="bg-navy-900 border border-slate-700 p-3 rounded-lg shadow-2xl text-xs space-y-1.5 backdrop-blur-md font-sans">
+                    <p className="font-semibold text-white border-b border-slate-800 pb-1 flex justify-between items-center">
+                      <span>{d.timeLabel}</span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        Lead {d.horizon.toFixed(1)}h
+                      </span>
                     </p>
+
                     <div className="flex justify-between space-x-4">
-                      <span className="text-teal-400 font-medium">Day-Ahead Forecast:</span>
-                      <span className="font-mono text-white">{formatMW(d.forecast)}</span>
+                      <span className="text-teal-400 font-medium">Latest Forecast:</span>
+                      <span className="font-mono text-white font-semibold">
+                        {formatMW(d.forecast)}
+                      </span>
                     </div>
-                    {d.actual !== null && (
-                      <div className="flex justify-between space-x-4">
-                        <span className="text-sky-400 font-medium">Actual Outturn:</span>
-                        <span className="font-mono text-white">{formatMW(d.actual)}</span>
-                      </div>
-                    )}
-                    {d.error !== null && (
-                      <div className="flex justify-between space-x-4">
-                        <span className={d.error > 0 ? 'text-amber-400' : 'text-teal-400'}>
-                          {d.error > 0 ? 'Over-Forecast Shortfall:' : 'Under-Forecast Surplus:'}
-                        </span>
-                        <span className="font-mono text-white">
-                          {d.error > 0 ? `+${d.error.toFixed(0)} MW` : `${d.error.toFixed(0)} MW`}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between space-x-4 border-t border-slate-800 pt-1 text-amber-300">
+
+                    <div className="flex justify-between space-x-4 text-amber-300">
                       <span>P90 Safe Hedge:</span>
                       <span className="font-mono">{formatMW(d.p90Hedge)}</span>
                     </div>
-                    <div className="text-[10px] text-slate-400 pt-0.5">
-                      Lead time horizon: {d.horizon.toFixed(1)}h
+
+                    <div className="flex justify-between space-x-4 text-amber-400/80 text-[11px]">
+                      <span>Safety Buffer:</span>
+                      <span className="font-mono">-{formatMW(d.bufferMw)}</span>
                     </div>
+
+                    {revealActual && d.actual !== null && (
+                      <div className="border-t border-slate-800 pt-1.5 mt-1 space-y-1">
+                        <div className="flex justify-between space-x-4 text-sky-400">
+                          <span className="font-medium">Actual Outturn:</span>
+                          <span className="font-mono text-white font-semibold">
+                            {formatMW(d.actual)}
+                          </span>
+                        </div>
+                        {d.error !== null && (
+                          <div className="flex justify-between space-x-4 text-[11px]">
+                            <span className={d.error > 0 ? 'text-amber-400' : 'text-teal-400'}>
+                              {d.error > 0 ? 'Over-Forecast Shortfall:' : 'Under-Forecast Surplus:'}
+                            </span>
+                            <span className="font-mono font-medium">
+                              {d.error > 0
+                                ? `+${d.error.toFixed(0)} MW`
+                                : `${d.error.toFixed(0)} MW`}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               }}
             />
 
             <Legend
-              wrapperStyle={{ paddingTop: '12px', fontSize: '12px' }}
+              wrapperStyle={{ paddingTop: '12px', fontSize: '11px' }}
               formatter={(value) => <span className="text-slate-300">{value}</span>}
             />
 
-            {/* P90 Hedge Band Area */}
+            {/* Shaded Risk Band (Area between Forecast and P90 Safe Hedge) */}
             <Area
               type="monotone"
               dataKey="p90Hedge"
-              name="P90 Safe Hedge Volume"
-              fill="url(#p90HedgeGradient)"
+              name="P90 Risk Hedge Band"
+              fill="url(#riskBandFill)"
               stroke="#f59e0b"
               strokeWidth={1.5}
               strokeDasharray="4 4"
             />
 
-            {/* Day-Ahead Latest Forecast */}
+            {/* Faint Earlier Versions (Toggleable) */}
+            {showRevisions &&
+              earlierRevisionRuns.map((run, i) => (
+                <Line
+                  key={run.key}
+                  type="monotone"
+                  dataKey={run.key}
+                  name={run.label}
+                  stroke="#94a3b8"
+                  strokeWidth={1.2}
+                  strokeOpacity={0.35 + i * 0.15}
+                  strokeDasharray="2 2"
+                  dot={false}
+                />
+              ))}
+
+            {/* Bold Latest-Forecast Line */}
             <Line
               type="monotone"
               dataKey="forecast"
-              name="Day-Ahead Forecast (Latest at Cutoff)"
+              name="Latest Forecast at Cutoff"
               stroke="#2dd4bf"
-              strokeWidth={2.5}
+              strokeWidth={3}
               dot={false}
               activeDot={{ r: 5, fill: '#2dd4bf' }}
             />
 
-            {/* Actual Outturn */}
-            <Line
-              type="monotone"
-              dataKey="actual"
-              name="Actual Outturn (FUELHH)"
-              stroke="#38bdf8"
-              strokeWidth={2}
-              dot={{ r: 2.5, fill: '#38bdf8' }}
-              activeDot={{ r: 5, fill: '#38bdf8' }}
-            />
+            {/* Optional Actual Outturn Overlay (Back-Test Toggle) */}
+            {revealActual && (
+              <Line
+                type="monotone"
+                dataKey="actual"
+                name="Actual Outturn (FUELHH)"
+                stroke="#38bdf8"
+                strokeWidth={2.5}
+                dot={{ r: 2.5, fill: '#38bdf8' }}
+                activeDot={{ r: 5, fill: '#38bdf8' }}
+              />
+            )}
           </ComposedChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      {/* Forecast Revisions Evolution Section (Fan Chart) */}
-      {showRevisions && (forecastData?.revisions?.length ?? 0) > 0 && (
-        <ChartCard
-          title="Forecast Evolution / Revision Fan Chart"
-          subtitle="Showing historical forecast trajectories published at different lead times leading up to auction cutoff."
-          tooltip="Visualizes how the forecast evolved as the meteorological model updated. Demonstrates convergence or volatility in wind speed predictions."
-          height="h-72"
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis dataKey="timeOnly" stroke="#64748b" fontSize={11} interval={3} />
-              <YAxis
-                stroke="#64748b"
-                fontSize={11}
-                tickFormatter={(v) => `${(v / 1000).toFixed(0)} GW`}
-              />
-              <Tooltip />
-              <Legend />
-
-              <Line
-                type="monotone"
-                dataKey="forecast"
-                name="Latest at Cutoff"
-                stroke="#2dd4bf"
-                strokeWidth={2.5}
-                dot={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="actual"
-                name="Actual Outturn"
-                stroke="#38bdf8"
-                strokeWidth={2}
-                dot={false}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </ChartCard>
-      )}
-
-      {/* 48-Period Inspection Table */}
-      {showTable && (
-        <div className="rounded-xl border border-slate-800 bg-navy-900/80 p-4 overflow-hidden backdrop-blur-md">
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
-            <h3 className="text-sm font-semibold text-white uppercase tracking-wide">
-              Settlement Period Granular Data (48 Half-Hours)
+      {/* 48-Row Granular Settlement Period Table with CSV Download */}
+      <div className="rounded-xl border border-slate-800 bg-navy-900/80 p-5 overflow-hidden backdrop-blur-md space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-800">
+          <div>
+            <h3 className="text-sm font-semibold text-white tracking-wide flex items-center space-x-2">
+              <span>Settlement Period Schedule (48 Half-Hours)</span>
+              <span className="text-[11px] text-slate-400 font-mono">
+                {deliveryDate} | Cutoff: {cutoff}
+              </span>
             </h3>
-            <span className="text-xs text-slate-400">All values in MW (UTC)</span>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Target delivery start time, published model run, forecast lead horizon, and quantitative buffer.
+            </p>
           </div>
 
-          <div className="overflow-x-auto max-h-96">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-navy-950 text-slate-400 uppercase font-mono sticky top-0 border-b border-slate-800">
-                <tr>
-                  <th className="py-2 px-3">SP</th>
-                  <th className="py-2 px-3">Delivery Time (UTC)</th>
-                  <th className="py-2 px-3 text-right">Forecast (MW)</th>
-                  <th className="py-2 px-3 text-right">Actual (MW)</th>
-                  <th className="py-2 px-3 text-right">Error (MW)</th>
-                  <th className="py-2 px-3 text-right">P90 Safe Hedge (MW)</th>
-                  <th className="py-2 px-3 text-right">Horizon</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60 font-mono">
-                {chartData.map((row) => (
-                  <tr key={row.settlementPeriod} className="hover:bg-navy-800/40 transition-colors">
-                    <td className="py-2 px-3 font-semibold text-slate-300">
-                      {row.settlementPeriod}
-                    </td>
-                    <td className="py-2 px-3 text-slate-300">{row.timeOnly}</td>
-                    <td className="py-2 px-3 text-right text-teal-300 font-semibold">
-                      {row.forecast.toFixed(0)}
-                    </td>
-                    <td className="py-2 px-3 text-right text-sky-300">
-                      {row.actual !== null ? row.actual.toFixed(0) : '—'}
-                    </td>
-                    <td
-                      className={`py-2 px-3 text-right font-semibold ${
-                        row.error === null
-                          ? 'text-slate-500'
-                          : row.error > 0
+          <button
+            id="download-csv-button"
+            onClick={handleDownloadCsv}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-500 text-white flex items-center space-x-1.5 shadow-sm transition-colors self-start sm:self-auto"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Download CSV</span>
+          </button>
+        </div>
+
+        <div className="overflow-x-auto max-h-[460px] rounded border border-slate-800/80">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-navy-950 text-slate-400 uppercase font-mono sticky top-0 border-b border-slate-800 z-10 shadow-sm">
+              <tr>
+                <th className="py-2.5 px-3">SP</th>
+                <th className="py-2.5 px-3">Time (UTC)</th>
+                <th className="py-2.5 px-3 text-right">Forecast (MW)</th>
+                <th className="py-2.5 px-3">Published At (UTC)</th>
+                <th className="py-2.5 px-3 text-right">Horizon</th>
+                <th className="py-2.5 px-3 text-right">Buffer (MW)</th>
+                <th className="py-2.5 px-3 text-right">P90 Safe Hedge (MW)</th>
+                {revealActual && (
+                  <>
+                    <th className="py-2.5 px-3 text-right text-sky-400">Actual (MW)</th>
+                    <th className="py-2.5 px-3 text-right">Error (MW)</th>
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60 font-mono">
+              {chartData.map((row) => (
+                <tr
+                  key={row.settlementPeriod}
+                  className="hover:bg-navy-800/50 transition-colors"
+                >
+                  <td className="py-2 px-3 font-semibold text-slate-300">
+                    {row.settlementPeriod}
+                  </td>
+                  <td className="py-2 px-3 text-slate-300 font-sans">{row.timeOnly}</td>
+                  <td className="py-2 px-3 text-right text-teal-300 font-semibold">
+                    {row.forecast.toFixed(0)}
+                  </td>
+                  <td className="py-2 px-3 text-slate-400 text-[11px]">
+                    {formatDateTimeUTC(row.publishedAtUtc)}
+                  </td>
+                  <td className="py-2 px-3 text-right text-slate-400">
+                    {row.horizon.toFixed(1)}h
+                  </td>
+                  <td className="py-2 px-3 text-right text-amber-400/90 font-medium">
+                    {row.bufferMw.toFixed(0)}
+                  </td>
+                  <td className="py-2 px-3 text-right text-amber-300 font-semibold">
+                    {row.p90Hedge.toFixed(0)}
+                  </td>
+                  {revealActual && (
+                    <>
+                      <td className="py-2 px-3 text-right text-sky-300 font-semibold">
+                        {row.actual !== null ? row.actual.toFixed(0) : '—'}
+                      </td>
+                      <td
+                        className={`py-2 px-3 text-right font-semibold ${
+                          row.error === null
+                            ? 'text-slate-500'
+                            : row.error > 0
                             ? 'text-amber-400'
                             : 'text-teal-400'
-                      }`}
-                    >
-                      {row.error !== null
-                        ? row.error > 0
-                          ? `+${row.error.toFixed(0)}`
-                          : row.error.toFixed(0)
-                        : '—'}
-                    </td>
-                    <td className="py-2 px-3 text-right text-amber-300">
-                      {row.p90Hedge.toFixed(0)}
-                    </td>
-                    <td className="py-2 px-3 text-right text-slate-400">
-                      {row.horizon.toFixed(1)}h
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        }`}
+                      >
+                        {row.error !== null
+                          ? row.error > 0
+                            ? `+${row.error.toFixed(0)}`
+                            : row.error.toFixed(0)
+                          : '—'}
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   );
 };

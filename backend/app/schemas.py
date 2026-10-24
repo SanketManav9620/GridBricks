@@ -18,11 +18,23 @@ class MetaResponse(BaseModel):
     min_delivery_date: str
     max_delivery_date: str
     available_dates: List[str]
-    default_cutoff: str = "11:00"
+    default_cutoff: str = "09:00"
     market: str = "UK Day-Ahead Electricity Market (BMRS)"
     fuel_type: str = "WIND"
     total_actual_periods: int
     total_forecast_versions: int
+
+
+class TimeseriesPoint(BaseModel):
+    startTime: datetime
+    delivery_date: str
+    hour: int
+    forecast_mw: float
+    actual_mw: Optional[float] = None
+    error_mw: Optional[float] = None
+    p90_buffer_mw: float = 0.0
+    p90_hedge_mw: float = 0.0
+
 
 
 class ForecastPoint(BaseModel):
