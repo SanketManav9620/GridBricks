@@ -20,6 +20,10 @@ import {
   Download,
   History,
   Sparkles,
+  Flame,
+  Zap,
+  Building2,
+  DollarSign,
 } from 'lucide-react';
 
 import { useMeta, useForecast, useActuals } from '@/api/hooks';
@@ -32,6 +36,16 @@ import { ErrorState } from '@/components/ErrorState';
 import { EmptyState } from '@/components/EmptyState';
 import { formatMW, formatTimeHHMM, formatDateTimeUTC } from '@/lib/utils';
 
+// 48-period UK winter normalized consumer demand profile (fractions of peak demand)
+const UK_WINTER_DEMAND_PROFILE = [
+  0.68, 0.66, 0.65, 0.64, 0.64, 0.63, 0.63, 0.64, // SP 1-8 (00:00 - 04:00)
+  0.66, 0.70, 0.76, 0.82, 0.88, 0.91, 0.92, 0.92, // SP 9-16 (04:30 - 08:00)
+  0.92, 0.91, 0.90, 0.90, 0.89, 0.89, 0.88, 0.88, // SP 17-24 (08:30 - 12:00)
+  0.88, 0.88, 0.89, 0.89, 0.90, 0.92, 0.95, 0.98, // SP 25-32 (12:30 - 16:00)
+  1.00, 1.00, 0.99, 0.97, 0.95, 0.93, 0.90, 0.87, // SP 33-40 (16:30 - 20:00)
+  0.84, 0.80, 0.77, 0.74, 0.72, 0.70, 0.69, 0.68, // SP 41-48 (20:30 - 24:00)
+];
+
 export const DayAheadDeskPage: React.FC = () => {
   const { data: meta, isLoading: metaLoading } = useMeta();
 
@@ -40,6 +54,12 @@ export const DayAheadDeskPage: React.FC = () => {
   const [cutoff, setCutoff] = useState<string>('09:00');
   const [showRevisions, setShowRevisions] = useState<boolean>(false);
   const [revealActual, setRevealActual] = useState<boolean>(false);
+
+  // Day-Ahead Wholesale Power & Thermal Procurement Deficit Calculator state
+  const [showProcurement, setShowProcurement] = useState<boolean>(true);
+  const [peakDemand, setPeakDemand] = useState<number>(32000); // Default 32 GW national GB peak
+  const [daPrice, setDaPrice] = useState<number>(75); // £75/MWh Day-ahead thermal
+  const [cashoutPrice, setCashoutPrice] = useState<number>(165); // £165/MWh System Buy Price cashout
 
   // Set page title
   React.useEffect(() => {
@@ -102,6 +122,11 @@ export const DayAheadDeskPage: React.FC = () => {
       const actMW = actualsMap.get(p.settlementPeriod);
       const errorMW = actMW !== undefined ? p.forecast_mw - actMW : null;
       const hour = (p.settlementPeriod - 1) >> 1;
+      const sp = p.settlementPeriod;
+      const demandFraction = UK_WINTER_DEMAND_PROFILE[(sp - 1) % 48] || 0.8;
+      const demandMw = peakDemand * demandFraction;
+      const thermalRawMw = Math.max(0, demandMw - p.forecast_mw);
+      const thermalP90Mw = Math.max(0, demandMw - p.risk_band_p90_mw);
 
       const row: Record<string, any> = {
         settlementPeriod: p.settlementPeriod,
@@ -117,6 +142,9 @@ export const DayAheadDeskPage: React.FC = () => {
         bufferMw: Math.max(0, p.forecast_mw - p.risk_band_p90_mw),
         horizon: p.horizon_hours,
         error: errorMW,
+        demand: demandMw,
+        thermalRaw: thermalRawMw,
+        thermalP90: thermalP90Mw,
       };
 
       // Attach earlier revision versions if present
@@ -126,7 +154,7 @@ export const DayAheadDeskPage: React.FC = () => {
 
       return row;
     });
-  }, [points, actualsMap, earlierRevisionRuns]);
+  }, [points, actualsMap, earlierRevisionRuns, peakDemand]);
 
   // Aggregate KPI summary metrics
   const meanForecast = useMemo(() => {
@@ -145,6 +173,52 @@ export const DayAheadDeskPage: React.FC = () => {
   const p90Buffer = forecastData?.p90_buffer_mw ?? 0;
   const riskAdjustedAverage = Math.max(0, meanForecast - p90Buffer);
 
+  // Aggregated Wholesale Power & Thermal Procurement summary
+  const procurementSummary = useMemo(() => {
+    if (!chartData.length) {
+      return {
+        totalDemandMwh: 0,
+        totalWindMwh: 0,
+        totalThermalRawMwh: 0,
+        totalThermalP90Mwh: 0,
+        peakThermalMw: 0,
+        hedgedSavingsGbp: 0,
+        windCoveragePct: 0,
+        bufferMwh: 0,
+      };
+    }
+    let totalDemandMwh = 0;
+    let totalWindMwh = 0;
+    let totalThermalRawMwh = 0;
+    let totalThermalP90Mwh = 0;
+    let peakThermalMw = 0;
+
+    chartData.forEach((r) => {
+      totalDemandMwh += r.demand * 0.5; // 30-min settlement period = 0.5 hours
+      totalWindMwh += r.forecast * 0.5;
+      totalThermalRawMwh += r.thermalRaw * 0.5;
+      totalThermalP90Mwh += r.thermalP90 * 0.5;
+      if (r.thermalP90 > peakThermalMw) peakThermalMw = r.thermalP90;
+    });
+
+    const bufferMwh = Math.max(0, totalThermalP90Mwh - totalThermalRawMwh);
+    const spreadGbp = Math.max(0, cashoutPrice - daPrice);
+    const hedgedSavingsGbp = bufferMwh * spreadGbp;
+    const windCoveragePct =
+      totalDemandMwh > 0 ? Math.min(100, (totalWindMwh / totalDemandMwh) * 100) : 0;
+
+    return {
+      totalDemandMwh,
+      totalWindMwh,
+      totalThermalRawMwh,
+      totalThermalP90Mwh,
+      peakThermalMw,
+      hedgedSavingsGbp,
+      windCoveragePct,
+      bufferMwh,
+    };
+  }, [chartData, cashoutPrice, daPrice]);
+
   // Latest model publication timestamp used
   const latestPublishTime = points[0]?.publishTime
     ? formatTimeHHMM(points[0].publishTime) + ' UTC'
@@ -159,8 +233,19 @@ export const DayAheadDeskPage: React.FC = () => {
       peakPoint.settlementPeriod
     }). Applying the recommended ${formatMW(
       p90Buffer
-    )} safety buffer hedges against systematic over-forecasting shortfalls with 90% confidence.`;
-  }, [cutoff, latestPublishTime, meanForecast, peakPoint, p90Buffer, points.length]);
+    )} safety buffer hedges against systematic over-forecasting shortfalls with 90% confidence. Net thermal procurement required across the delivery day is ${Math.round(
+      procurementSummary.totalThermalP90Mwh
+    ).toLocaleString()} MWh (${Math.round(procurementSummary.peakThermalMw).toLocaleString()} MW peak).`;
+  }, [
+    cutoff,
+    latestPublishTime,
+    meanForecast,
+    peakPoint,
+    p90Buffer,
+    points.length,
+    procurementSummary.totalThermalP90Mwh,
+    procurementSummary.peakThermalMw,
+  ]);
 
   // CSV export handler for the 48-period data table
   const handleDownloadCsv = () => {
@@ -173,6 +258,9 @@ export const DayAheadDeskPage: React.FC = () => {
       'Horizon (Hours)',
       'Buffer (MW)',
       'Risk-Adjusted Hedge (MW)',
+      ...(showProcurement
+        ? ['Consumer Demand (MW)', 'Thermal Procurement Raw (MW)', 'Thermal Procurement P90 (MW)']
+        : []),
       ...(revealActual ? ['Actual Generation (MW)', 'Error (MW)'] : []),
     ];
 
@@ -184,6 +272,9 @@ export const DayAheadDeskPage: React.FC = () => {
       r.horizon.toFixed(2),
       r.bufferMw.toFixed(1),
       r.p90Hedge.toFixed(1),
+      ...(showProcurement
+        ? [r.demand.toFixed(1), r.thermalRaw.toFixed(1), r.thermalP90.toFixed(1)]
+        : []),
       ...(revealActual
         ? [
             r.actual !== null ? r.actual.toFixed(1) : '',
@@ -342,6 +433,20 @@ export const DayAheadDeskPage: React.FC = () => {
         tooltip="Physical generation trajectory for physical delivery day D. The teal line represents the latest available forecast at decision cutoff. The shaded amber area indicates the P90 downside risk band. Use the toggles to inspect model revisions or reveal historical actuals."
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            {/* Thermal Procurement Calculator Toggle */}
+            <button
+              id="toggle-procurement-button"
+              onClick={() => setShowProcurement(!showProcurement)}
+              className={`px-2.5 py-1.5 rounded text-xs font-medium flex items-center space-x-1.5 border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
+                showProcurement
+                  ? 'bg-orange-950/70 border-orange-500/60 text-orange-300 shadow-sm'
+                  : 'bg-navy-800/80 border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-600'
+              }`}
+            >
+              <Flame className="w-3.5 h-3.5 text-orange-400" />
+              <span>{showProcurement ? 'Hide Thermal Gap' : 'Thermal Procurement'}</span>
+            </button>
+
             {/* Earlier Versions Toggle */}
             <button
               id="toggle-revisions-button"
@@ -430,6 +535,27 @@ export const DayAheadDeskPage: React.FC = () => {
                       <span className="font-mono">-{formatMW(d.bufferMw)}</span>
                     </div>
 
+                    {showProcurement && (
+                      <div className="border-t border-slate-800 pt-1.5 mt-1 space-y-1">
+                        <div className="flex justify-between space-x-4 text-purple-400">
+                          <span className="font-medium">Consumer Demand:</span>
+                          <span className="font-mono text-white font-semibold">
+                            {formatMW(d.demand)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between space-x-4 text-orange-400">
+                          <span>Thermal / DA Purchase (P90):</span>
+                          <span className="font-mono font-semibold">
+                            {formatMW(d.thermalP90)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between space-x-4 text-slate-400 text-[11px]">
+                          <span>Thermal (Raw Wind):</span>
+                          <span className="font-mono">{formatMW(d.thermalRaw)}</span>
+                        </div>
+                      </div>
+                    )}
+
                     {revealActual && d.actual !== null && (
                       <div className="border-t border-slate-800 pt-1.5 mt-1 space-y-1">
                         <div className="flex justify-between space-x-4 text-sky-400">
@@ -489,6 +615,31 @@ export const DayAheadDeskPage: React.FC = () => {
                 />
               ))}
 
+            {/* Consumer Demand Profile */}
+            {showProcurement && (
+              <Line
+                type="monotone"
+                dataKey="demand"
+                name="Consumer Demand Load"
+                stroke="#c084fc"
+                strokeWidth={2}
+                strokeDasharray="4 4"
+                dot={false}
+              />
+            )}
+
+            {/* Thermal / DA Purchase Required (P90) */}
+            {showProcurement && (
+              <Line
+                type="monotone"
+                dataKey="thermalP90"
+                name="Thermal / DA Purchase Req. (P90)"
+                stroke="#f97316"
+                strokeWidth={2.5}
+                dot={false}
+              />
+            )}
+
             {/* Bold Latest-Forecast Line */}
             <Line
               type="monotone"
@@ -516,6 +667,211 @@ export const DayAheadDeskPage: React.FC = () => {
         </ResponsiveContainer>
       </ChartCard>
 
+      {/* Day-Ahead Wholesale Power & Thermal Procurement Deficit Calculator */}
+      {showProcurement && (
+        <div className="rounded-xl border border-orange-500/30 bg-gradient-to-r from-orange-950/20 via-navy-900/70 to-navy-900/50 p-5 backdrop-blur-md shadow-xl space-y-5">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-orange-500/20">
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2 text-orange-400">
+                <div className="p-1.5 rounded-lg bg-orange-500/20 border border-orange-500/30">
+                  <Flame className="w-5 h-5 text-orange-300" />
+                </div>
+                <h3 className="text-base font-bold text-white tracking-tight">
+                  Day-Ahead Wholesale Power & Thermal Procurement Calculator
+                </h3>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30 font-semibold font-mono">
+                  Utility Decision Support
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                Determines how much additional wholesale electricity must be procured from thermal plants (e.g. CCGT/gas peakers) or the day-ahead auction to satisfy consumer demand beyond available wind generation, accounting for quantified forecast error buffers.
+              </p>
+            </div>
+
+            {/* Presets */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-slate-400 font-medium">Portfolio Preset:</span>
+              <button
+                type="button"
+                onClick={() => setPeakDemand(32000)}
+                className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                  peakDemand === 32000
+                    ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                    : 'bg-navy-800 border-slate-700 text-slate-300 hover:border-slate-600'
+                }`}
+              >
+                National GB (32 GW)
+              </button>
+              <button
+                type="button"
+                onClick={() => setPeakDemand(8000)}
+                className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                  peakDemand === 8000
+                    ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                    : 'bg-navy-800 border-slate-700 text-slate-300 hover:border-slate-600'
+                }`}
+              >
+                Tier-1 Utility (8 GW)
+              </button>
+              <button
+                type="button"
+                onClick={() => setPeakDemand(3000)}
+                className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                  peakDemand === 3000
+                    ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                    : 'bg-navy-800 border-slate-700 text-slate-300 hover:border-slate-600'
+                }`}
+              >
+                Mid Supplier (3 GW)
+              </button>
+            </div>
+          </div>
+
+          {/* Interactive Sliders & Parameter Inputs */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-lg bg-navy-950/80 border border-slate-800/80">
+            {/* Peak Demand Slider */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-300 font-medium flex items-center space-x-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Consumer Peak Demand:</span>
+                </span>
+                <span className="font-mono text-purple-300 font-bold">
+                  {peakDemand.toLocaleString()} MW
+                </span>
+              </div>
+              <input
+                type="range"
+                min={1000}
+                max={45000}
+                step={500}
+                value={peakDemand}
+                onChange={(e) => setPeakDemand(Number(e.target.value))}
+                className="w-full h-1.5 bg-navy-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+              />
+              <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+                <span>1 GW</span>
+                <span>Winter Peak Model (48 SP)</span>
+                <span>45 GW</span>
+              </div>
+            </div>
+
+            {/* Day-Ahead Thermal Price */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-300 font-medium flex items-center space-x-1.5">
+                  <Zap className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Day-Ahead Auction Price:</span>
+                </span>
+                <span className="font-mono text-teal-300 font-bold">£{daPrice}/MWh</span>
+              </div>
+              <input
+                type="range"
+                min={40}
+                max={200}
+                step={5}
+                value={daPrice}
+                onChange={(e) => setDaPrice(Number(e.target.value))}
+                className="w-full h-1.5 bg-navy-800 rounded-lg appearance-none cursor-pointer accent-teal-500"
+              />
+              <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+                <span>£40/MWh</span>
+                <span>Wholesale Baseload</span>
+                <span>£200/MWh</span>
+              </div>
+            </div>
+
+            {/* Imbalance Cashout System Buy Price */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-300 font-medium flex items-center space-x-1.5">
+                  <DollarSign className="w-3.5 h-3.5 text-amber-400" />
+                  <span>System Buy Price (Cashout):</span>
+                </span>
+                <span className="font-mono text-amber-300 font-bold">£{cashoutPrice}/MWh</span>
+              </div>
+              <input
+                type="range"
+                min={80}
+                max={400}
+                step={5}
+                value={cashoutPrice}
+                onChange={(e) => setCashoutPrice(Number(e.target.value))}
+                className="w-full h-1.5 bg-navy-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+              />
+              <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+                <span>£80/MWh</span>
+                <span>Penalty Spread: £{Math.max(0, cashoutPrice - daPrice)}/MWh</span>
+                <span>£400/MWh</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 4 Procurement KPI Tiles */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-3.5 rounded-lg bg-navy-900 border border-slate-800 space-y-1">
+              <span className="text-[11px] text-slate-400 uppercase tracking-wide font-medium">
+                Total Consumer Demand
+              </span>
+              <p className="text-lg font-bold font-mono text-purple-300">
+                {Math.round(procurementSummary.totalDemandMwh).toLocaleString()}{' '}
+                <span className="text-xs font-sans text-slate-400 font-normal">MWh</span>
+              </p>
+              <p className="text-[11px] text-slate-400">
+                Wind Coverage:{' '}
+                <strong className="text-teal-400 font-mono">
+                  {procurementSummary.windCoveragePct.toFixed(1)}%
+                </strong>
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-lg bg-navy-900 border border-slate-800 space-y-1">
+              <span className="text-[11px] text-slate-400 uppercase tracking-wide font-medium">
+                Day-Ahead Thermal Req (P90)
+              </span>
+              <p className="text-lg font-bold font-mono text-orange-400">
+                {Math.round(procurementSummary.totalThermalP90Mwh).toLocaleString()}{' '}
+                <span className="text-xs font-sans text-slate-400 font-normal">MWh</span>
+              </p>
+              <p className="text-[11px] text-slate-400">
+                Unadjusted Wind Req:{' '}
+                <span className="font-mono text-slate-300">
+                  {Math.round(procurementSummary.totalThermalRawMwh).toLocaleString()} MWh
+                </span>
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-lg bg-navy-900 border border-slate-800 space-y-1">
+              <span className="text-[11px] text-slate-400 uppercase tracking-wide font-medium">
+                Peak Thermal Capacity
+              </span>
+              <p className="text-lg font-bold font-mono text-amber-300">
+                {formatMW(procurementSummary.peakThermalMw)}
+              </p>
+              <p className="text-[11px] text-slate-400">
+                Buffer Reserve Volume:{' '}
+                <strong className="text-amber-400 font-mono">
+                  +{Math.round(procurementSummary.bufferMwh).toLocaleString()} MWh
+                </strong>
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-lg bg-gradient-to-br from-amber-950/40 to-navy-900 border border-amber-500/30 space-y-1">
+              <span className="text-[11px] text-amber-300 uppercase tracking-wide font-medium flex items-center space-x-1">
+                <span>Imbalance Penalty Hedged</span>
+              </span>
+              <p className="text-lg font-bold font-mono text-teal-300">
+                £{(procurementSummary.hedgedSavingsGbp / 1000).toFixed(0)}k{' '}
+                <span className="text-xs font-sans text-slate-400 font-normal">protected</span>
+              </p>
+              <p className="text-[11px] text-slate-300">
+                Avoids £{Math.max(0, cashoutPrice - daPrice)}/MWh cash-out shortfall premium
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 48-Row Granular Settlement Period Table with CSV Download */}
       <div className="rounded-xl border border-slate-800 bg-navy-900/80 p-5 overflow-hidden backdrop-blur-md space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-800">
@@ -527,7 +883,7 @@ export const DayAheadDeskPage: React.FC = () => {
               </span>
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Target delivery start time, published model run, forecast lead horizon, and quantitative buffer.
+              Target delivery start time, published model run, forecast lead horizon, consumer demand, and quantitative buffer.
             </p>
           </div>
 
@@ -552,6 +908,12 @@ export const DayAheadDeskPage: React.FC = () => {
                 <th className="py-2.5 px-3 text-right">Horizon</th>
                 <th className="py-2.5 px-3 text-right">Buffer (MW)</th>
                 <th className="py-2.5 px-3 text-right">P90 Safe Hedge (MW)</th>
+                {showProcurement && (
+                  <>
+                    <th className="py-2.5 px-3 text-right text-purple-400">Demand (MW)</th>
+                    <th className="py-2.5 px-3 text-right text-orange-400">Thermal Req (MW)</th>
+                  </>
+                )}
                 {revealActual && (
                   <>
                     <th className="py-2.5 px-3 text-right text-sky-400">Actual (MW)</th>
@@ -585,6 +947,16 @@ export const DayAheadDeskPage: React.FC = () => {
                   <td className="py-2 px-3 text-right text-amber-300 font-semibold">
                     {row.p90Hedge.toFixed(0)}
                   </td>
+                  {showProcurement && (
+                    <>
+                      <td className="py-2 px-3 text-right text-purple-300 font-mono">
+                        {row.demand.toFixed(0)}
+                      </td>
+                      <td className="py-2 px-3 text-right text-orange-300 font-semibold font-mono">
+                        {row.thermalP90.toFixed(0)}
+                      </td>
+                    </>
+                  )}
                   {revealActual && (
                     <>
                       <td className="py-2 px-3 text-right text-sky-300 font-semibold">

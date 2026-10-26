@@ -14,7 +14,9 @@
 
 ## Executive Summary
 
-The **UK Wind Power Day-Ahead Trading Desk** is an institutional-grade decision-support platform designed for energy utility traders purchasing power on day $D-1$ before UK power auction gates close (EPEX SPOT and Nord Pool). The platform ingests real-time and historical National Grid wind generation actuals (`FUELHH`) and forecast revisions (`WINDFOR`) from the Elexon Insights API (BMRS), dynamically enforces decision-time cutoffs (e.g. 09:00 or 11:00 London time) to eliminate lookahead bias, and quantifies historical forecast uncertainty. By combining intraday revision tracking with an asymmetric **P90 safety buffer** calculated via an expanding historical window, the desk can hedge over-forecast exposure and optimize physical bidding volumes before wholesale auction clearing.
+The **UK Wind Power Day-Ahead Trading Desk** is an institutional-grade decision-support platform designed for energy utility traders purchasing power on day $D-1$ before UK power auction gates close (EPEX SPOT and Nord Pool). The platform ingests real-time and historical National Grid wind generation actuals (`FUELHH`) and forecast revisions (`WINDFOR`) from the Elexon Insights API (BMRS), dynamically enforces decision-time cutoffs (e.g. 09:00 or 11:00 London time) to eliminate lookahead bias, and quantifies historical forecast uncertainty.
+
+By combining intraday revision tracking with an asymmetric **P90 safety buffer** (calculated via expanding historical windows) and an interactive **Thermal Procurement & Net Deficit Calculator**, the trading desk can accurately determine how much additional wholesale electricity must be procured (e.g. from CCGT/thermal plants or day-ahead power auctions) to meet consumer demand while insulating the utility from punitive real-time balancing cash-out penalties.
 
 ---
 
