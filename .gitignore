@@ -36,6 +36,7 @@ data/windfor_20251231_20260202.json
 !api/data/forecasts.csv.gz
 !backend/app/data/actuals.csv.gz
 !backend/app/data/forecasts.csv.gz
-!data/actuals.csv.gz
-!data/forecasts.csv.gz
+!api/app/data/actuals.csv.gz
+!api/app/data/forecasts.csv.gz
+
 
