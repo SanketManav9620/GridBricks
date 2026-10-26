@@ -8,7 +8,7 @@ interface SkeletonProps {
 export const Skeleton: React.FC<SkeletonProps> = ({ className }) => {
   return (
     <div
-      className={cn('animate-pulse rounded-md bg-navy-800/80 border border-slate-800', className)}
+      className={cn('animate-pulse rounded-md bg-slate-200 border border-slate-200/80', className)}
     />
   );
 };
@@ -17,7 +17,7 @@ export const SkeletonKpiGrid: React.FC = () => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="p-4 rounded-xl border border-slate-800 bg-navy-900/60 space-y-3">
+        <div key={i} className="p-4 rounded-xl border border-slate-200 bg-white shadow-xs space-y-3">
           <Skeleton className="h-3.5 w-24" />
           <Skeleton className="h-7 w-36" />
           <Skeleton className="h-3 w-48" />
@@ -31,7 +31,7 @@ export const SkeletonChart: React.FC<{ height?: string }> = ({ height = 'h-80' }
   return (
     <div
       className={cn(
-        'w-full rounded-xl border border-slate-800 bg-navy-900/50 p-6 flex flex-col justify-between',
+        'w-full rounded-xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between',
         height
       )}
     >

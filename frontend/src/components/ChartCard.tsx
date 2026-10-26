@@ -24,17 +24,17 @@ export const ChartCard: React.FC<ChartCardProps> = ({
   return (
     <div
       className={cn(
-        'rounded-xl border border-slate-800 bg-navy-900/70 p-5 backdrop-blur-md transition-all duration-200 hover:border-slate-700/80',
+        'rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all duration-200 hover:shadow-sm hover:border-slate-300',
         className
       )}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 gap-2 border-b border-slate-800/80 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 gap-2 border-b border-slate-100 mb-4">
         <div>
           <div className="flex items-center space-x-2">
-            <h3 className="text-sm font-semibold tracking-wide text-white uppercase">{title}</h3>
+            <h3 className="text-xs font-bold tracking-wider text-slate-800 uppercase font-mono">{title}</h3>
             {tooltip && <InfoTooltip content={tooltip} />}
           </div>
-          {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
+          {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
         </div>
 
         {actions && <div className="flex items-center space-x-2">{actions}</div>}

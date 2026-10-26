@@ -302,9 +302,9 @@ export const DayAheadDeskPage: React.FC = () => {
   if (metaLoading || (forecastLoading && !forecastData)) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-          <div className="h-8 w-64 bg-navy-800 rounded animate-pulse" />
-          <div className="h-10 w-80 bg-navy-800 rounded animate-pulse" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+          <div className="h-8 w-64 bg-slate-200 rounded animate-pulse" />
+          <div className="h-10 w-80 bg-slate-200 rounded animate-pulse" />
         </div>
         <SkeletonKpiGrid />
         <SkeletonChart height="h-96" />
@@ -336,7 +336,7 @@ export const DayAheadDeskPage: React.FC = () => {
         action={
           <button
             onClick={() => setCutoff('09:00')}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-500 text-white"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-xs"
           >
             Reset to Default (09:00 London)
           </button>
@@ -345,19 +345,18 @@ export const DayAheadDeskPage: React.FC = () => {
     );
   }
 
-
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Top Header & Interactive Controls */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-slate-800/80">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-slate-200/90">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-white flex items-center space-x-2">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center space-x-2">
             <span>Day-Ahead Decision Desk</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/20 font-mono">
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200 font-mono font-semibold">
               National Wind (GB)
             </span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Point-in-time forecast selected strictly prior to auction cutoff. Calibrated safety buffer
             hedges cash-out imbalance penalties.
           </p>
@@ -418,10 +417,10 @@ export const DayAheadDeskPage: React.FC = () => {
       </div>
 
       {/* Short Plain-English Insight Line Above the Main Chart */}
-      <div className="rounded-lg border border-teal-900/40 bg-teal-950/20 px-4 py-3 text-xs text-teal-200/90 flex items-start space-x-3 backdrop-blur-sm">
-        <Sparkles className="w-4 h-4 text-teal-400 mt-0.5 flex-shrink-0" />
+      <div className="rounded-xl border border-teal-200/80 bg-teal-50/70 px-4 py-3 text-xs text-teal-950 flex items-start space-x-3 shadow-2xs">
+        <Sparkles className="w-4 h-4 text-teal-700 mt-0.5 shrink-0" />
         <p className="leading-relaxed">
-          <strong className="text-teal-300 font-semibold">Desk Insight: </strong>
+          <strong className="text-teal-900 font-semibold">Desk Insight: </strong>
           {insightText}
         </p>
       </div>
@@ -437,13 +436,13 @@ export const DayAheadDeskPage: React.FC = () => {
             <button
               id="toggle-procurement-button"
               onClick={() => setShowProcurement(!showProcurement)}
-              className={`px-2.5 py-1.5 rounded text-xs font-medium flex items-center space-x-1.5 border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
                 showProcurement
-                  ? 'bg-orange-950/70 border-orange-500/60 text-orange-300 shadow-sm'
-                  : 'bg-navy-800/80 border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-600'
+                  ? 'bg-orange-50 border-orange-300 text-orange-900 shadow-2xs'
+                  : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <Flame className="w-3.5 h-3.5 text-orange-400" />
+              <Flame className="w-3.5 h-3.5 text-orange-600" />
               <span>{showProcurement ? 'Hide Thermal Gap' : 'Thermal Procurement'}</span>
             </button>
 
@@ -451,13 +450,13 @@ export const DayAheadDeskPage: React.FC = () => {
             <button
               id="toggle-revisions-button"
               onClick={() => setShowRevisions(!showRevisions)}
-              className={`px-2.5 py-1.5 rounded text-xs font-medium flex items-center space-x-1.5 border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
                 showRevisions
-                  ? 'bg-navy-700 border-slate-500 text-slate-100 shadow-sm'
-                  : 'bg-navy-800/80 border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-600'
+                  ? 'bg-slate-100 border-slate-300 text-slate-900 shadow-2xs'
+                  : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <History className="w-3.5 h-3.5" />
+              <History className="w-3.5 h-3.5 text-slate-600" />
               <span>{showRevisions ? 'Hide Earlier Runs' : 'Show Earlier Runs'}</span>
             </button>
 
@@ -465,13 +464,13 @@ export const DayAheadDeskPage: React.FC = () => {
             <button
               id="reveal-actual-button"
               onClick={() => setRevealActual(!revealActual)}
-              className={`px-2.5 py-1.5 rounded text-xs font-medium flex items-center space-x-1.5 border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
                 revealActual
-                  ? 'bg-sky-950/70 border-sky-500/50 text-sky-300 shadow-sm'
-                  : 'bg-navy-800/80 border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-600'
+                  ? 'bg-sky-50 border-sky-300 text-sky-900 shadow-2xs'
+                  : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              {revealActual ? <EyeOff className="w-3.5 h-3.5 text-sky-400" /> : <Eye className="w-3.5 h-3.5" />}
+              {revealActual ? <EyeOff className="w-3.5 h-3.5 text-sky-600" /> : <Eye className="w-3.5 h-3.5 text-sky-600" />}
               <span>{revealActual ? 'Hide Actuals (Back-Test)' : 'Reveal Actual (Back-Test)'}</span>
             </button>
           </div>
@@ -482,12 +481,12 @@ export const DayAheadDeskPage: React.FC = () => {
           <ComposedChart data={chartData} margin={{ top: 15, right: 20, left: 10, bottom: 20 }}>
             <defs>
               <linearGradient id="riskBandFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.22} />
-                <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.05} />
+                <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.20} />
+                <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.04} />
               </linearGradient>
             </defs>
 
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
 
             <XAxis
               dataKey="timeOnly"
@@ -510,46 +509,46 @@ export const DayAheadDeskPage: React.FC = () => {
                 if (!active || !payload?.length) return null;
                 const d = payload[0].payload;
                 return (
-                  <div className="bg-navy-900 border border-slate-700 p-3 rounded-lg shadow-2xl text-xs space-y-1.5 backdrop-blur-md font-sans">
-                    <p className="font-semibold text-white border-b border-slate-800 pb-1 flex justify-between items-center">
+                  <div className="bg-white border border-slate-200 p-3 rounded-xl shadow-xl text-xs space-y-1.5 font-sans">
+                    <p className="font-semibold text-slate-900 border-b border-slate-100 pb-1 flex justify-between items-center">
                       <span>{d.timeLabel}</span>
-                      <span className="text-[10px] text-slate-400 font-mono">
+                      <span className="text-[10px] text-slate-500 font-mono">
                         Lead {d.horizon.toFixed(1)}h
                       </span>
                     </p>
 
                     <div className="flex justify-between space-x-4">
-                      <span className="text-teal-400 font-medium">Latest Forecast:</span>
-                      <span className="font-mono text-white font-semibold">
+                      <span className="text-teal-700 font-medium">Latest Forecast:</span>
+                      <span className="font-mono text-slate-900 font-bold">
                         {formatMW(d.forecast)}
                       </span>
                     </div>
 
-                    <div className="flex justify-between space-x-4 text-amber-300">
+                    <div className="flex justify-between space-x-4 text-amber-800">
                       <span>P90 Safe Hedge:</span>
-                      <span className="font-mono">{formatMW(d.p90Hedge)}</span>
+                      <span className="font-mono font-bold">{formatMW(d.p90Hedge)}</span>
                     </div>
 
-                    <div className="flex justify-between space-x-4 text-amber-400/80 text-[11px]">
+                    <div className="flex justify-between space-x-4 text-amber-700 text-[11px]">
                       <span>Safety Buffer:</span>
                       <span className="font-mono">-{formatMW(d.bufferMw)}</span>
                     </div>
 
                     {showProcurement && (
-                      <div className="border-t border-slate-800 pt-1.5 mt-1 space-y-1">
-                        <div className="flex justify-between space-x-4 text-purple-400">
+                      <div className="border-t border-slate-100 pt-1.5 mt-1 space-y-1">
+                        <div className="flex justify-between space-x-4 text-purple-700">
                           <span className="font-medium">Consumer Demand:</span>
-                          <span className="font-mono text-white font-semibold">
+                          <span className="font-mono text-slate-900 font-bold">
                             {formatMW(d.demand)}
                           </span>
                         </div>
-                        <div className="flex justify-between space-x-4 text-orange-400">
-                          <span>Thermal / DA Purchase (P90):</span>
-                          <span className="font-mono font-semibold">
+                        <div className="flex justify-between space-x-4 text-orange-700">
+                          <span className="font-medium">Thermal / DA Purchase (P90):</span>
+                          <span className="font-mono font-bold text-orange-800">
                             {formatMW(d.thermalP90)}
                           </span>
                         </div>
-                        <div className="flex justify-between space-x-4 text-slate-400 text-[11px]">
+                        <div className="flex justify-between space-x-4 text-slate-500 text-[11px]">
                           <span>Thermal (Raw Wind):</span>
                           <span className="font-mono">{formatMW(d.thermalRaw)}</span>
                         </div>
@@ -557,16 +556,16 @@ export const DayAheadDeskPage: React.FC = () => {
                     )}
 
                     {revealActual && d.actual !== null && (
-                      <div className="border-t border-slate-800 pt-1.5 mt-1 space-y-1">
-                        <div className="flex justify-between space-x-4 text-sky-400">
+                      <div className="border-t border-slate-100 pt-1.5 mt-1 space-y-1">
+                        <div className="flex justify-between space-x-4 text-sky-700">
                           <span className="font-medium">Actual Outturn:</span>
-                          <span className="font-mono text-white font-semibold">
+                          <span className="font-mono text-slate-900 font-bold">
                             {formatMW(d.actual)}
                           </span>
                         </div>
                         {d.error !== null && (
                           <div className="flex justify-between space-x-4 text-[11px]">
-                            <span className={d.error > 0 ? 'text-amber-400' : 'text-teal-400'}>
+                            <span className={d.error > 0 ? 'text-amber-700' : 'text-teal-700'}>
                               {d.error > 0 ? 'Over-Forecast Shortfall:' : 'Under-Forecast Surplus:'}
                             </span>
                             <span className="font-mono font-medium">
@@ -585,7 +584,7 @@ export const DayAheadDeskPage: React.FC = () => {
 
             <Legend
               wrapperStyle={{ paddingTop: '12px', fontSize: '11px' }}
-              formatter={(value) => <span className="text-slate-300">{value}</span>}
+              formatter={(value) => <span className="text-slate-700 font-medium">{value}</span>}
             />
 
             {/* Shaded Risk Band (Area between Forecast and P90 Safe Hedge) */}
@@ -594,7 +593,7 @@ export const DayAheadDeskPage: React.FC = () => {
               dataKey="p90Hedge"
               name="P90 Risk Hedge Band"
               fill="url(#riskBandFill)"
-              stroke="#f59e0b"
+              stroke="#d97706"
               strokeWidth={1.5}
               strokeDasharray="4 4"
             />
@@ -609,7 +608,7 @@ export const DayAheadDeskPage: React.FC = () => {
                   name={run.label}
                   stroke="#94a3b8"
                   strokeWidth={1.2}
-                  strokeOpacity={0.35 + i * 0.15}
+                  strokeOpacity={0.5 + i * 0.15}
                   strokeDasharray="2 2"
                   dot={false}
                 />
@@ -621,7 +620,7 @@ export const DayAheadDeskPage: React.FC = () => {
                 type="monotone"
                 dataKey="demand"
                 name="Consumer Demand Load"
-                stroke="#c084fc"
+                stroke="#7c3aed"
                 strokeWidth={2}
                 strokeDasharray="4 4"
                 dot={false}
@@ -634,7 +633,7 @@ export const DayAheadDeskPage: React.FC = () => {
                 type="monotone"
                 dataKey="thermalP90"
                 name="Thermal / DA Purchase Req. (P90)"
-                stroke="#f97316"
+                stroke="#ea580c"
                 strokeWidth={2.5}
                 dot={false}
               />
@@ -645,10 +644,10 @@ export const DayAheadDeskPage: React.FC = () => {
               type="monotone"
               dataKey="forecast"
               name="Latest Forecast at Cutoff"
-              stroke="#2dd4bf"
-              strokeWidth={3}
+              stroke="#0d9488"
+              strokeWidth={2.5}
               dot={false}
-              activeDot={{ r: 5, fill: '#2dd4bf' }}
+              activeDot={{ r: 5, fill: '#0d9488' }}
             />
 
             {/* Optional Actual Outturn Overlay (Back-Test Toggle) */}
@@ -657,10 +656,10 @@ export const DayAheadDeskPage: React.FC = () => {
                 type="monotone"
                 dataKey="actual"
                 name="Actual Outturn (FUELHH)"
-                stroke="#38bdf8"
-                strokeWidth={2.5}
-                dot={{ r: 2.5, fill: '#38bdf8' }}
-                activeDot={{ r: 5, fill: '#38bdf8' }}
+                stroke="#0284c7"
+                strokeWidth={2}
+                dot={{ r: 2.5, fill: '#0284c7' }}
+                activeDot={{ r: 5, fill: '#0284c7' }}
               />
             )}
           </ComposedChart>
@@ -669,35 +668,35 @@ export const DayAheadDeskPage: React.FC = () => {
 
       {/* Day-Ahead Wholesale Power & Thermal Procurement Deficit Calculator */}
       {showProcurement && (
-        <div className="rounded-xl border border-orange-500/30 bg-gradient-to-r from-orange-950/20 via-navy-900/70 to-navy-900/50 p-5 backdrop-blur-md shadow-xl space-y-5">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-orange-500/20">
+        <div className="rounded-xl border border-orange-200 bg-gradient-to-br from-orange-50/60 via-white to-amber-50/40 p-5 shadow-xs space-y-5">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-orange-200/80">
             <div className="space-y-1">
-              <div className="flex items-center space-x-2 text-orange-400">
-                <div className="p-1.5 rounded-lg bg-orange-500/20 border border-orange-500/30">
-                  <Flame className="w-5 h-5 text-orange-300" />
+              <div className="flex items-center space-x-2 text-orange-800">
+                <div className="p-1.5 rounded-lg bg-orange-100 border border-orange-200">
+                  <Flame className="w-5 h-5 text-orange-600" />
                 </div>
-                <h3 className="text-base font-bold text-white tracking-tight">
+                <h3 className="text-base font-bold text-slate-900 tracking-tight">
                   Day-Ahead Wholesale Power & Thermal Procurement Calculator
                 </h3>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30 font-semibold font-mono">
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-200 font-semibold font-mono">
                   Utility Decision Support
                 </span>
               </div>
-              <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
                 Determines how much additional wholesale electricity must be procured from thermal plants (e.g. CCGT/gas peakers) or the day-ahead auction to satisfy consumer demand beyond available wind generation, accounting for quantified forecast error buffers.
               </p>
             </div>
 
             {/* Presets */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-slate-400 font-medium">Portfolio Preset:</span>
+              <span className="text-xs text-slate-500 font-medium">Portfolio Preset:</span>
               <button
                 type="button"
                 onClick={() => setPeakDemand(32000)}
-                className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
                   peakDemand === 32000
-                    ? 'bg-orange-500/20 border-orange-500 text-orange-300'
-                    : 'bg-navy-800 border-slate-700 text-slate-300 hover:border-slate-600'
+                    ? 'bg-orange-600 text-white border-orange-600 shadow-2xs'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
                 National GB (32 GW)
@@ -705,10 +704,10 @@ export const DayAheadDeskPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setPeakDemand(8000)}
-                className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
                   peakDemand === 8000
-                    ? 'bg-orange-500/20 border-orange-500 text-orange-300'
-                    : 'bg-navy-800 border-slate-700 text-slate-300 hover:border-slate-600'
+                    ? 'bg-orange-600 text-white border-orange-600 shadow-2xs'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
                 Tier-1 Utility (8 GW)
@@ -716,10 +715,10 @@ export const DayAheadDeskPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setPeakDemand(3000)}
-                className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
                   peakDemand === 3000
-                    ? 'bg-orange-500/20 border-orange-500 text-orange-300'
-                    : 'bg-navy-800 border-slate-700 text-slate-300 hover:border-slate-600'
+                    ? 'bg-orange-600 text-white border-orange-600 shadow-2xs'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
                 Mid Supplier (3 GW)
@@ -728,15 +727,15 @@ export const DayAheadDeskPage: React.FC = () => {
           </div>
 
           {/* Interactive Sliders & Parameter Inputs */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-lg bg-navy-950/80 border border-slate-800/80">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
             {/* Peak Demand Slider */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs">
-                <span className="text-slate-300 font-medium flex items-center space-x-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-purple-400" />
+                <span className="text-slate-700 font-medium flex items-center space-x-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-purple-600" />
                   <span>Consumer Peak Demand:</span>
                 </span>
-                <span className="font-mono text-purple-300 font-bold">
+                <span className="font-mono text-purple-700 font-bold">
                   {peakDemand.toLocaleString()} MW
                 </span>
               </div>
@@ -747,7 +746,7 @@ export const DayAheadDeskPage: React.FC = () => {
                 step={500}
                 value={peakDemand}
                 onChange={(e) => setPeakDemand(Number(e.target.value))}
-                className="w-full h-1.5 bg-navy-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
               />
               <div className="flex justify-between text-[10px] text-slate-500 font-mono">
                 <span>1 GW</span>
@@ -759,11 +758,11 @@ export const DayAheadDeskPage: React.FC = () => {
             {/* Day-Ahead Thermal Price */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs">
-                <span className="text-slate-300 font-medium flex items-center space-x-1.5">
-                  <Zap className="w-3.5 h-3.5 text-teal-400" />
+                <span className="text-slate-700 font-medium flex items-center space-x-1.5">
+                  <Zap className="w-3.5 h-3.5 text-teal-600" />
                   <span>Day-Ahead Auction Price:</span>
                 </span>
-                <span className="font-mono text-teal-300 font-bold">£{daPrice}/MWh</span>
+                <span className="font-mono text-teal-700 font-bold">£{daPrice}/MWh</span>
               </div>
               <input
                 type="range"
@@ -772,7 +771,7 @@ export const DayAheadDeskPage: React.FC = () => {
                 step={5}
                 value={daPrice}
                 onChange={(e) => setDaPrice(Number(e.target.value))}
-                className="w-full h-1.5 bg-navy-800 rounded-lg appearance-none cursor-pointer accent-teal-500"
+                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-600"
               />
               <div className="flex justify-between text-[10px] text-slate-500 font-mono">
                 <span>£40/MWh</span>
@@ -784,11 +783,11 @@ export const DayAheadDeskPage: React.FC = () => {
             {/* Imbalance Cashout System Buy Price */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs">
-                <span className="text-slate-300 font-medium flex items-center space-x-1.5">
-                  <DollarSign className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-slate-700 font-medium flex items-center space-x-1.5">
+                  <DollarSign className="w-3.5 h-3.5 text-amber-600" />
                   <span>System Buy Price (Cashout):</span>
                 </span>
-                <span className="font-mono text-amber-300 font-bold">£{cashoutPrice}/MWh</span>
+                <span className="font-mono text-amber-700 font-bold">£{cashoutPrice}/MWh</span>
               </div>
               <input
                 type="range"
@@ -797,7 +796,7 @@ export const DayAheadDeskPage: React.FC = () => {
                 step={5}
                 value={cashoutPrice}
                 onChange={(e) => setCashoutPrice(Number(e.target.value))}
-                className="w-full h-1.5 bg-navy-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
               />
               <div className="flex justify-between text-[10px] text-slate-500 font-mono">
                 <span>£80/MWh</span>
@@ -809,62 +808,62 @@ export const DayAheadDeskPage: React.FC = () => {
 
           {/* 4 Procurement KPI Tiles */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-3.5 rounded-lg bg-navy-900 border border-slate-800 space-y-1">
-              <span className="text-[11px] text-slate-400 uppercase tracking-wide font-medium">
+            <div className="p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-1">
+              <span className="text-[11px] text-slate-500 uppercase tracking-wide font-medium font-mono">
                 Total Consumer Demand
               </span>
-              <p className="text-lg font-bold font-mono text-purple-300">
+              <p className="text-xl font-bold font-mono text-purple-800">
                 {Math.round(procurementSummary.totalDemandMwh).toLocaleString()}{' '}
-                <span className="text-xs font-sans text-slate-400 font-normal">MWh</span>
+                <span className="text-xs font-sans text-slate-500 font-normal">MWh</span>
               </p>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500">
                 Wind Coverage:{' '}
-                <strong className="text-teal-400 font-mono">
+                <strong className="text-teal-700 font-mono">
                   {procurementSummary.windCoveragePct.toFixed(1)}%
                 </strong>
               </p>
             </div>
 
-            <div className="p-3.5 rounded-lg bg-navy-900 border border-slate-800 space-y-1">
-              <span className="text-[11px] text-slate-400 uppercase tracking-wide font-medium">
+            <div className="p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-1">
+              <span className="text-[11px] text-slate-500 uppercase tracking-wide font-medium font-mono">
                 Day-Ahead Thermal Req (P90)
               </span>
-              <p className="text-lg font-bold font-mono text-orange-400">
+              <p className="text-xl font-bold font-mono text-orange-700">
                 {Math.round(procurementSummary.totalThermalP90Mwh).toLocaleString()}{' '}
-                <span className="text-xs font-sans text-slate-400 font-normal">MWh</span>
+                <span className="text-xs font-sans text-slate-500 font-normal">MWh</span>
               </p>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500">
                 Unadjusted Wind Req:{' '}
-                <span className="font-mono text-slate-300">
+                <span className="font-mono text-slate-700">
                   {Math.round(procurementSummary.totalThermalRawMwh).toLocaleString()} MWh
                 </span>
               </p>
             </div>
 
-            <div className="p-3.5 rounded-lg bg-navy-900 border border-slate-800 space-y-1">
-              <span className="text-[11px] text-slate-400 uppercase tracking-wide font-medium">
+            <div className="p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs space-y-1">
+              <span className="text-[11px] text-slate-500 uppercase tracking-wide font-medium font-mono">
                 Peak Thermal Capacity
               </span>
-              <p className="text-lg font-bold font-mono text-amber-300">
+              <p className="text-xl font-bold font-mono text-amber-800">
                 {formatMW(procurementSummary.peakThermalMw)}
               </p>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500">
                 Buffer Reserve Volume:{' '}
-                <strong className="text-amber-400 font-mono">
+                <strong className="text-amber-700 font-mono">
                   +{Math.round(procurementSummary.bufferMwh).toLocaleString()} MWh
                 </strong>
               </p>
             </div>
 
-            <div className="p-3.5 rounded-lg bg-gradient-to-br from-amber-950/40 to-navy-900 border border-amber-500/30 space-y-1">
-              <span className="text-[11px] text-amber-300 uppercase tracking-wide font-medium flex items-center space-x-1">
-                <span>Imbalance Penalty Hedged</span>
+            <div className="p-3.5 rounded-xl bg-gradient-to-br from-teal-50 to-emerald-50/80 border border-teal-200 shadow-2xs space-y-1">
+              <span className="text-[11px] text-teal-800 uppercase tracking-wide font-semibold font-mono">
+                Imbalance Penalty Hedged
               </span>
-              <p className="text-lg font-bold font-mono text-teal-300">
+              <p className="text-xl font-bold font-mono text-teal-900">
                 £{(procurementSummary.hedgedSavingsGbp / 1000).toFixed(0)}k{' '}
-                <span className="text-xs font-sans text-slate-400 font-normal">protected</span>
+                <span className="text-xs font-sans text-teal-700 font-normal">protected</span>
               </p>
-              <p className="text-[11px] text-slate-300">
+              <p className="text-[11px] text-teal-800">
                 Avoids £{Math.max(0, cashoutPrice - daPrice)}/MWh cash-out shortfall premium
               </p>
             </div>
@@ -873,16 +872,16 @@ export const DayAheadDeskPage: React.FC = () => {
       )}
 
       {/* 48-Row Granular Settlement Period Table with CSV Download */}
-      <div className="rounded-xl border border-slate-800 bg-navy-900/80 p-5 overflow-hidden backdrop-blur-md space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-800">
+      <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
-            <h3 className="text-sm font-semibold text-white tracking-wide flex items-center space-x-2">
+            <h3 className="text-sm font-bold text-slate-900 tracking-wide flex items-center space-x-2">
               <span>Settlement Period Schedule (48 Half-Hours)</span>
-              <span className="text-[11px] text-slate-400 font-mono">
+              <span className="text-[11px] text-slate-500 font-mono">
                 {deliveryDate} | Cutoff: {cutoff}
               </span>
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Target delivery start time, published model run, forecast lead horizon, consumer demand, and quantitative buffer.
             </p>
           </div>
@@ -890,16 +889,16 @@ export const DayAheadDeskPage: React.FC = () => {
           <button
             id="download-csv-button"
             onClick={handleDownloadCsv}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-500 text-white flex items-center space-x-1.5 shadow-sm transition-colors self-start sm:self-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white flex items-center space-x-1.5 shadow-2xs transition-colors self-start sm:self-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Download CSV</span>
           </button>
         </div>
 
-        <div className="overflow-x-auto max-h-[460px] rounded border border-slate-800/80">
+        <div className="overflow-x-auto max-h-[460px] rounded-lg border border-slate-200">
           <table className="w-full text-left text-xs">
-            <thead className="bg-navy-950 text-slate-400 uppercase font-mono sticky top-0 border-b border-slate-800 z-10 shadow-sm">
+            <thead className="bg-slate-50 text-slate-600 uppercase font-mono sticky top-0 border-b border-slate-200 z-10 shadow-2xs">
               <tr>
                 <th className="py-2.5 px-3">SP</th>
                 <th className="py-2.5 px-3">Time (UTC)</th>
@@ -910,65 +909,65 @@ export const DayAheadDeskPage: React.FC = () => {
                 <th className="py-2.5 px-3 text-right">P90 Safe Hedge (MW)</th>
                 {showProcurement && (
                   <>
-                    <th className="py-2.5 px-3 text-right text-purple-400">Demand (MW)</th>
-                    <th className="py-2.5 px-3 text-right text-orange-400">Thermal Req (MW)</th>
+                    <th className="py-2.5 px-3 text-right text-purple-700">Demand (MW)</th>
+                    <th className="py-2.5 px-3 text-right text-orange-700">Thermal Req (MW)</th>
                   </>
                 )}
                 {revealActual && (
                   <>
-                    <th className="py-2.5 px-3 text-right text-sky-400">Actual (MW)</th>
+                    <th className="py-2.5 px-3 text-right text-sky-700">Actual (MW)</th>
                     <th className="py-2.5 px-3 text-right">Error (MW)</th>
                   </>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono">
+            <tbody className="divide-y divide-slate-100 font-mono text-slate-800">
               {chartData.map((row) => (
                 <tr
                   key={row.settlementPeriod}
-                  className="hover:bg-navy-800/50 transition-colors"
+                  className="hover:bg-slate-50/80 transition-colors"
                 >
-                  <td className="py-2 px-3 font-semibold text-slate-300">
+                  <td className="py-2 px-3 font-semibold text-slate-600">
                     {row.settlementPeriod}
                   </td>
-                  <td className="py-2 px-3 text-slate-300 font-sans">{row.timeOnly}</td>
-                  <td className="py-2 px-3 text-right text-teal-300 font-semibold">
+                  <td className="py-2 px-3 text-slate-700 font-sans">{row.timeOnly}</td>
+                  <td className="py-2 px-3 text-right text-teal-700 font-bold">
                     {row.forecast.toFixed(0)}
                   </td>
-                  <td className="py-2 px-3 text-slate-400 text-[11px]">
+                  <td className="py-2 px-3 text-slate-500 text-[11px]">
                     {formatDateTimeUTC(row.publishedAtUtc)}
                   </td>
-                  <td className="py-2 px-3 text-right text-slate-400">
+                  <td className="py-2 px-3 text-right text-slate-600">
                     {row.horizon.toFixed(1)}h
                   </td>
-                  <td className="py-2 px-3 text-right text-amber-400/90 font-medium">
+                  <td className="py-2 px-3 text-right text-amber-700 font-medium">
                     {row.bufferMw.toFixed(0)}
                   </td>
-                  <td className="py-2 px-3 text-right text-amber-300 font-semibold">
+                  <td className="py-2 px-3 text-right text-amber-800 font-bold">
                     {row.p90Hedge.toFixed(0)}
                   </td>
                   {showProcurement && (
                     <>
-                      <td className="py-2 px-3 text-right text-purple-300 font-mono">
+                      <td className="py-2 px-3 text-right text-purple-700 font-mono">
                         {row.demand.toFixed(0)}
                       </td>
-                      <td className="py-2 px-3 text-right text-orange-300 font-semibold font-mono">
+                      <td className="py-2 px-3 text-right text-orange-700 font-bold font-mono">
                         {row.thermalP90.toFixed(0)}
                       </td>
                     </>
                   )}
                   {revealActual && (
                     <>
-                      <td className="py-2 px-3 text-right text-sky-300 font-semibold">
+                      <td className="py-2 px-3 text-right text-sky-700 font-semibold">
                         {row.actual !== null ? row.actual.toFixed(0) : '—'}
                       </td>
                       <td
                         className={`py-2 px-3 text-right font-semibold ${
                           row.error === null
-                            ? 'text-slate-500'
+                            ? 'text-slate-400'
                             : row.error > 0
-                            ? 'text-amber-400'
-                            : 'text-teal-400'
+                            ? 'text-amber-700'
+                            : 'text-teal-700'
                         }`}
                       >
                         {row.error !== null

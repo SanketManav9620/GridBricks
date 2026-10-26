@@ -25,6 +25,7 @@ export const App: React.FC = () => {
             <Route path="/accuracy" element={<AccuracyAnalyticsPage />} />
             <Route path="/analytics" element={<AccuracyAnalyticsPage />} />
             <Route path="/method" element={<MethodologyPage />} />
+            <Route path="/methodology" element={<MethodologyPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AppShell>

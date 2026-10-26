@@ -25,53 +25,53 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   className,
 }) => {
   const variantStyles = {
-    default: 'border-slate-800 bg-navy-900/80 text-slate-100',
-    teal: 'border-teal-500/30 bg-navy-900/90 text-teal-300 card-glow',
-    amber: 'border-amber-500/30 bg-navy-900/90 text-amber-300 card-amber-glow',
-    rose: 'border-rose-500/30 bg-navy-900/90 text-rose-300',
-    blue: 'border-sky-500/30 bg-navy-900/90 text-sky-300',
+    default: 'border-slate-200/90 bg-white text-slate-900 shadow-xs',
+    teal: 'border-teal-200 bg-white text-slate-900 shadow-xs',
+    amber: 'border-amber-200 bg-white text-slate-900 shadow-xs',
+    rose: 'border-rose-200 bg-white text-slate-900 shadow-xs',
+    blue: 'border-sky-200 bg-white text-slate-900 shadow-xs',
   };
 
   const iconStyles = {
-    default: 'text-slate-400 bg-navy-800',
-    teal: 'text-teal-400 bg-teal-950/60 border border-teal-500/20',
-    amber: 'text-amber-400 bg-amber-950/60 border border-amber-500/20',
-    rose: 'text-rose-400 bg-rose-950/60 border border-rose-500/20',
-    blue: 'text-sky-400 bg-sky-950/60 border border-sky-500/20',
+    default: 'text-slate-600 bg-slate-100 border border-slate-200',
+    teal: 'text-teal-700 bg-teal-50 border border-teal-200',
+    amber: 'text-amber-700 bg-amber-50 border border-amber-200',
+    rose: 'text-rose-700 bg-rose-50 border border-rose-200',
+    blue: 'text-sky-700 bg-sky-50 border border-sky-200',
   };
 
   return (
     <div
       className={cn(
-        'relative p-4 rounded-xl border backdrop-blur-md transition-all duration-200 hover:border-slate-700',
+        'relative p-4 rounded-xl border transition-all duration-200 hover:border-slate-300 hover:shadow-sm',
         variantStyles[variant],
         className
       )}
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-1.5">
-          <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 font-mono">
             {title}
           </span>
           {tooltip && <InfoTooltip content={tooltip} />}
         </div>
         {Icon && (
-          <div className={cn('p-2 rounded-lg', iconStyles[variant])}>
+          <div className={cn('p-1.5 rounded-lg', iconStyles[variant])}>
             <Icon className="w-4 h-4" />
           </div>
         )}
       </div>
 
       <div className="flex items-baseline space-x-2">
-        <span className="text-2xl font-bold font-mono tracking-tight text-white">{value}</span>
+        <span className="text-2xl font-bold font-mono tracking-tight text-slate-900">{value}</span>
         {badge && (
-          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-navy-800 border border-slate-700 text-slate-300">
+          <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-slate-100 border border-slate-200 text-slate-700 font-mono">
             {badge}
           </span>
         )}
       </div>
 
-      {subtitle && <p className="mt-1 text-xs text-slate-400 truncate">{subtitle}</p>}
+      {subtitle && <p className="mt-1 text-xs text-slate-500 truncate">{subtitle}</p>}
     </div>
   );
 };
