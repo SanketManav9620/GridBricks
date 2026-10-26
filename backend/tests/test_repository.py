@@ -155,3 +155,21 @@ def test_repository_live_fallback_when_missing(tmp_path: Path):
         df_f = repo.get_forecasts()
         assert len(df_f) == 1
         assert df_f["generation"].iloc[0] == 10800.0
+
+
+def test_repository_embedded_fallback_when_default_and_no_disk(tmp_path: Path):
+    """Verify that in serverless environments without disk snapshots, embedded snapshots load perfectly."""
+    empty_dir = tmp_path / "nonexistent"
+    empty_dir.mkdir()
+    # Explicitly enable embedded fallback (simulating default production repository in serverless)
+    repo = DataRepository(data_dir=empty_dir, live_fallback=False, use_embedded=True)
+
+    act_df = repo.get_actuals()
+    assert len(act_df) == 1632
+    assert "startTime" in act_df.columns
+    assert "generation" in act_df.columns
+
+    fc_df = repo.get_forecasts()
+    assert len(fc_df) == 19856
+    assert "publishTime" in fc_df.columns
+

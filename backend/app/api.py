@@ -10,8 +10,9 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List
 
 import pandas as pd
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.analytics import (
     aggregate_by_delivery_day,
@@ -53,6 +54,10 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # Enable CORS for local Vite dev server and Vercel deployments
 app.add_middleware(
     CORSMiddleware,
@@ -61,6 +66,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Ensure all unhandled exceptions log detailed traceback and return clean JSON response."""
+    logger.exception(f"Unhandled error processing {request.method} {request.url}: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": str(exc) or "Internal server error occurred while processing request.",
+            "type": type(exc).__name__,
+            "path": str(request.url.path),
+        },
+    )
+
 
 # In-memory LRU computation caches to ensure instant responses on repeated queries
 _analytics_cache: Dict[str, Any] = {}

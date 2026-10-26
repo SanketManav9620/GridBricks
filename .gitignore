@@ -32,3 +32,10 @@ data/windfor_20251231_20260202.json
 # Explicitly ensure backend data snapshots are tracked
 !backend/data/actuals.csv.gz
 !backend/data/forecasts.csv.gz
+!api/data/actuals.csv.gz
+!api/data/forecasts.csv.gz
+!backend/app/data/actuals.csv.gz
+!backend/app/data/forecasts.csv.gz
+!data/actuals.csv.gz
+!data/forecasts.csv.gz
+
