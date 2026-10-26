@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List
 
 import pandas as pd
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -86,6 +86,9 @@ async def global_exception_handler(request: Request, exc: Exception):
 _analytics_cache: Dict[str, Any] = {}
 
 
+api_router = APIRouter()
+
+
 def validate_cutoff(
     cutoff: str = Query("09:00", description="Cutoff time on D-1 in HH:MM (London time)"),
 ) -> str:
@@ -125,13 +128,13 @@ def validate_delivery_date(
     return delivery_date.strip()
 
 
-@app.get("/api/health", response_model=HealthResponse, tags=["System"])
+@api_router.get("/health", response_model=HealthResponse, tags=["System"])
 def get_health():
     """Health check endpoint returning system status and current UTC timestamp."""
     return HealthResponse(status="ok", version="0.1.0", timestamp=datetime.now(timezone.utc))
 
 
-@app.get("/api/meta", response_model=MetaResponse, tags=["Metadata"])
+@api_router.get("/meta", response_model=MetaResponse, tags=["Metadata"])
 def get_metadata(repo: DataRepository = Depends(get_repository)):
     """Return available delivery dates, default cutoff gate, and dataset statistics."""
     act_df = repo.get_actuals()
@@ -153,7 +156,7 @@ def get_metadata(repo: DataRepository = Depends(get_repository)):
     )
 
 
-@app.get("/api/forecast", response_model=ForecastResponse, tags=["Trading Desk"])
+@api_router.get("/forecast", response_model=ForecastResponse, tags=["Trading Desk"])
 def get_forecast(
     delivery_date: str = Depends(validate_delivery_date),
     cutoff: str = Depends(validate_cutoff),
@@ -259,7 +262,7 @@ def get_forecast(
     return response
 
 
-@app.get("/api/actuals", response_model=ActualsResponse, tags=["Trading Desk"])
+@api_router.get("/actuals", response_model=ActualsResponse, tags=["Trading Desk"])
 def get_actuals(
     delivery_date: str = Depends(validate_delivery_date),
     repo: DataRepository = Depends(get_repository),
@@ -325,7 +328,7 @@ def _get_or_compute_all_errors(repo: DataRepository, cutoff: str) -> Any:
     return errors_df
 
 
-@app.get("/api/accuracy/summary", response_model=AccuracySummaryResponse, tags=["Analytics"])
+@api_router.get("/accuracy/summary", response_model=AccuracySummaryResponse, tags=["Analytics"])
 def get_accuracy_summary(
     cutoff: str = Depends(validate_cutoff),
     repo: DataRepository = Depends(get_repository),
@@ -371,7 +374,7 @@ def get_accuracy_summary(
     return response
 
 
-@app.get("/api/accuracy/daily", response_model=List[DailyAccuracyItem], tags=["Analytics"])
+@api_router.get("/accuracy/daily", response_model=List[DailyAccuracyItem], tags=["Analytics"])
 def get_accuracy_daily(
     cutoff: str = Depends(validate_cutoff),
     repo: DataRepository = Depends(get_repository),
@@ -419,7 +422,7 @@ def get_accuracy_daily(
     return items
 
 
-@app.get("/api/accuracy/by-hour", response_model=List[HourlyAccuracyItem], tags=["Analytics"])
+@api_router.get("/accuracy/by-hour", response_model=List[HourlyAccuracyItem], tags=["Analytics"])
 def get_accuracy_by_hour(
     cutoff: str = Depends(validate_cutoff),
     repo: DataRepository = Depends(get_repository),
@@ -452,7 +455,7 @@ def get_accuracy_by_hour(
     return items
 
 
-@app.get("/api/accuracy/by-horizon", response_model=List[HorizonAccuracyItem], tags=["Analytics"])
+@api_router.get("/accuracy/by-horizon", response_model=List[HorizonAccuracyItem], tags=["Analytics"])
 def get_accuracy_by_horizon(
     cutoff: str = Depends(validate_cutoff),
     repo: DataRepository = Depends(get_repository),
@@ -484,7 +487,7 @@ def get_accuracy_by_horizon(
     return items
 
 
-@app.get("/api/accuracy/distribution", response_model=List[ErrorHistogramItem], tags=["Analytics"])
+@api_router.get("/accuracy/distribution", response_model=List[ErrorHistogramItem], tags=["Analytics"])
 def get_accuracy_distribution(
     cutoff: str = Depends(validate_cutoff),
     bin_size_mw: float = Query(500.0, ge=100.0, le=2000.0, description="Bin width in MW"),
@@ -515,7 +518,7 @@ def get_accuracy_distribution(
     return items
 
 
-@app.get("/api/accuracy/timeseries", response_model=List[TimeseriesPoint], tags=["Analytics"])
+@api_router.get("/accuracy/timeseries", response_model=List[TimeseriesPoint], tags=["Analytics"])
 def get_accuracy_timeseries(
     cutoff: str = Depends(validate_cutoff),
     repo: DataRepository = Depends(get_repository),
@@ -556,3 +559,12 @@ def get_accuracy_timeseries(
 
     _analytics_cache[cache_key] = items
     return items
+
+
+# Mount router with and without /api prefix for maximum deployment flexibility
+app.include_router(api_router, prefix="/api")
+app.include_router(api_router)
+
+@app.get("/", tags=["System"])
+def root_status():
+    return {"status": "ok", "service": "GridBricks UK Wind Trading API", "version": "0.1.0"}

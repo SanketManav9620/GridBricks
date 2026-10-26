@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <!-- Rounded Base Plate -->
+  <rect width="64" height="64" rx="16" fill="#0b132b" />
+  <rect x="2" y="2" width="60" height="60" rx="14" stroke="#14b8a6" stroke-width="2" stroke-opacity="0.4" />
+  
+  <!-- Subtle Glow Gradient -->
+  <circle cx="32" cy="30" r="22" fill="#14b8a6" fill-opacity="0.12" />
+
+  <!-- Wind Turbine Mast -->
+  <path d="M30.5 32L29 52H35L33.5 32H30.5Z" fill="#64748b" />
+  
+  <!-- Turbine Hub -->
+  <circle cx="32" cy="30" r="3.5" fill="#2dd4bf" stroke="#0b132b" stroke-width="1.5" />
+
+  <!-- Turbine Blades (Teal 3-Blade Aerofoil) -->
+  <!-- Top Blade -->
+  <path d="M32 28.5C30.5 22 31.5 14 32 10C32.5 14 33.5 22 32 28.5Z" fill="#2dd4bf" />
+  <!-- Bottom-Left Blade -->
+  <path d="M30.5 31C24.5 33.5 16.5 37 13 39C16.5 41 24.5 36 30.5 31Z" fill="#14b8a6" />
+  <!-- Bottom-Right Blade -->
+  <path d="M33.5 31C39.5 33.5 47.5 37 51 39C47.5 41 39.5 36 33.5 31Z" fill="#0d9488" />
+
+  <!-- Electric Power Lightning Bolt in Accent Amber -->
+  <path d="M42 16L35 27H41L36 38L47 25H40L42 16Z" fill="#f59e0b" stroke="#0b132b" stroke-width="1" />
+</svg>
