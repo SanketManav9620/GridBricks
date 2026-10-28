@@ -9,7 +9,7 @@ interface KpiCardProps {
   subtitle?: string;
   tooltip?: string;
   icon?: LucideIcon;
-  variant?: 'default' | 'teal' | 'amber' | 'rose' | 'blue';
+  variant?: 'default' | 'burgundy' | 'beige' | 'teal' | 'amber' | 'rose' | 'blue';
   badge?: string;
   className?: string;
 }
@@ -24,54 +24,58 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   badge,
   className,
 }) => {
-  const variantStyles = {
-    default: 'border-slate-200/90 bg-white text-slate-900 shadow-xs',
-    teal: 'border-teal-200 bg-white text-slate-900 shadow-xs',
-    amber: 'border-amber-200 bg-white text-slate-900 shadow-xs',
-    rose: 'border-rose-200 bg-white text-slate-900 shadow-xs',
-    blue: 'border-sky-200 bg-white text-slate-900 shadow-xs',
+  const variantStyles: Record<string, string> = {
+    default: 'border-stone-200/90 bg-white text-stone-900 shadow-xs hover:border-stone-300',
+    burgundy: 'border-burgundy-200/90 bg-white text-stone-900 shadow-xs hover:border-burgundy-300',
+    beige: 'border-beige-300/90 bg-white text-stone-900 shadow-xs hover:border-beige-400',
+    teal: 'border-burgundy-200/90 bg-white text-stone-900 shadow-xs hover:border-burgundy-300',
+    amber: 'border-beige-300/90 bg-white text-stone-900 shadow-xs hover:border-beige-400',
+    rose: 'border-burgundy-300 bg-burgundy-50/30 text-stone-900 shadow-xs hover:border-burgundy-400',
+    blue: 'border-stone-300 bg-stone-50/50 text-stone-900 shadow-xs hover:border-stone-400',
   };
 
-  const iconStyles = {
-    default: 'text-slate-600 bg-slate-100 border border-slate-200',
-    teal: 'text-teal-700 bg-teal-50 border border-teal-200',
-    amber: 'text-amber-700 bg-amber-50 border border-amber-200',
-    rose: 'text-rose-700 bg-rose-50 border border-rose-200',
-    blue: 'text-sky-700 bg-sky-50 border border-sky-200',
+  const iconStyles: Record<string, string> = {
+    default: 'text-stone-600 bg-stone-100 border border-stone-200',
+    burgundy: 'text-burgundy-700 bg-burgundy-50 border border-burgundy-200',
+    beige: 'text-beige-800 bg-beige-100 border border-beige-300',
+    teal: 'text-burgundy-700 bg-burgundy-50 border border-burgundy-200',
+    amber: 'text-beige-800 bg-beige-100 border border-beige-300',
+    rose: 'text-burgundy-700 bg-burgundy-100 border border-burgundy-200',
+    blue: 'text-stone-700 bg-stone-100 border border-stone-200',
   };
 
   return (
     <div
       className={cn(
-        'relative p-4 rounded-xl border transition-all duration-200 hover:border-slate-300 hover:shadow-sm',
-        variantStyles[variant],
+        'relative p-4 rounded-xl border transition-all duration-200 hover:shadow-sm',
+        variantStyles[variant] || variantStyles.default,
         className
       )}
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-1.5">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 font-mono">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 font-mono">
             {title}
           </span>
           {tooltip && <InfoTooltip content={tooltip} />}
         </div>
         {Icon && (
-          <div className={cn('p-1.5 rounded-lg', iconStyles[variant])}>
+          <div className={cn('p-1.5 rounded-lg', iconStyles[variant] || iconStyles.default)}>
             <Icon className="w-4 h-4" />
           </div>
         )}
       </div>
 
       <div className="flex items-baseline space-x-2">
-        <span className="text-2xl font-bold font-mono tracking-tight text-slate-900">{value}</span>
+        <span className="text-2xl font-bold font-mono tracking-tight text-stone-900">{value}</span>
         {badge && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-slate-100 border border-slate-200 text-slate-700 font-mono">
+          <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-beige-100 border border-beige-300 text-stone-800 font-mono">
             {badge}
           </span>
         )}
       </div>
 
-      {subtitle && <p className="mt-1 text-xs text-slate-500 truncate">{subtitle}</p>}
+      {subtitle && <p className="text-xs text-stone-500 mt-1 font-sans">{subtitle}</p>}
     </div>
   );
 };

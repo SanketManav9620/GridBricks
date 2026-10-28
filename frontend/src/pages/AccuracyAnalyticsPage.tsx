@@ -79,7 +79,6 @@ export const AccuracyAnalyticsPage: React.FC = () => {
   const { data: horizonData } = useAccuracyByHorizon(cutoff);
   const { data: distData } = useAccuracyDistribution(cutoff, 500);
 
-
   // Format month-long hourly timeseries data for Recharts (744 hours)
   const timeseriesChartData = useMemo(() => {
     if (!timeseriesData?.length) return [];
@@ -171,9 +170,9 @@ export const AccuracyAnalyticsPage: React.FC = () => {
   if (summaryLoading && !summary) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-          <div className="h-8 w-64 bg-slate-200 rounded animate-pulse" />
-          <div className="h-10 w-44 bg-slate-200 rounded animate-pulse" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200">
+          <div className="h-8 w-64 bg-stone-200 rounded animate-pulse" />
+          <div className="h-10 w-44 bg-stone-200 rounded animate-pulse" />
         </div>
         <SkeletonKpiGrid />
         <SkeletonChart height="h-96" />
@@ -205,7 +204,7 @@ export const AccuracyAnalyticsPage: React.FC = () => {
         action={
           <button
             onClick={() => setCutoff('09:00')}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-burgundy-700 hover:bg-burgundy-800 text-white"
           >
             Reset to Default (09:00 London)
           </button>
@@ -217,21 +216,21 @@ export const AccuracyAnalyticsPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Top Header & Cutoff Control */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-slate-200/90">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-stone-200/90">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center space-x-2">
+          <h1 className="text-xl font-bold tracking-tight text-stone-900 flex items-center space-x-2">
             <span>Quantitative Accuracy & Risk Verification</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-mono">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-beige-100 text-burgundy-900 border border-beige-300 font-mono font-semibold">
               January 2026 (744 Hours)
             </span>
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-stone-500 mt-1">
             Empirical statistical verification of Elexon Day-Ahead Wind forecasts against actual outturn. All metrics update dynamically with decision cutoff.
           </p>
         </div>
 
         <div className="flex items-center space-x-3">
-          <span className="text-xs text-slate-600 font-medium hidden sm:inline">D-1 Cutoff:</span>
+          <span className="text-xs text-stone-600 font-medium hidden sm:inline">D-1 Cutoff:</span>
           <CutoffSelect cutoff={cutoff} onChange={setCutoff} />
         </div>
       </div>
@@ -244,7 +243,7 @@ export const AccuracyAnalyticsPage: React.FC = () => {
           subtitle={`WAPE: ${summary.wape_pct.toFixed(1)}%`}
           tooltip="MAE = (1/N) * Σ |Forecast - Actual|. Average absolute error magnitude across all delivery hours, indicating standard model dispersion regardless of over/under direction."
           icon={BarChart2}
-          variant="default"
+          variant="burgundy"
         />
 
         <KpiCard
@@ -253,7 +252,7 @@ export const AccuracyAnalyticsPage: React.FC = () => {
           subtitle="Penalizes extreme misses"
           tooltip="RMSE = √((1/N) * Σ (Forecast - Actual)²). Quadratic metric that severely penalizes large forecast misses, vital for identifying sudden meteorological ramp failures."
           icon={TrendingDown}
-          variant="rose"
+          variant="burgundy"
         />
 
         <KpiCard
@@ -262,8 +261,8 @@ export const AccuracyAnalyticsPage: React.FC = () => {
           subtitle={`${((summary.bias_mw / summary.mean_actual_mw) * 100).toFixed(1)}% of mean outturn`}
           tooltip="Bias = (1/N) * Σ (Forecast - Actual). Systematic directional deviation. A positive bias means the model persistently over-forecasts generation, causing short cash-out imbalances."
           icon={Activity}
-          variant={summary.bias_mw > 0 ? 'amber' : 'teal'}
-          badge={summary.bias_mw > 0 ? 'Over-Forecast' : 'Under-Forecast'}
+          variant="beige"
+          badge={summary.bias_mw > 0 ? 'Over-Forecast Risk' : 'Under-Forecast'}
         />
 
         <KpiCard
@@ -272,7 +271,7 @@ export const AccuracyAnalyticsPage: React.FC = () => {
           subtitle="Weighted Abs Percentage"
           tooltip="WAPE = (Σ |Forecast - Actual| / Σ Actual) * 100%. Capacity-weighted relative accuracy. Avoids division by zero during low-wind periods."
           icon={Target}
-          variant="teal"
+          variant="beige"
         />
 
         <KpiCard
@@ -281,41 +280,41 @@ export const AccuracyAnalyticsPage: React.FC = () => {
           subtitle="90th percentile miss"
           tooltip="P90 Over-Forecast = 90th percentile of (Forecast - Actual). In 90% of hours, generation shortfall does not exceed this quantity."
           icon={ShieldCheck}
-          variant="amber"
+          variant="burgundy"
           badge="Downside Tail"
         />
       </div>
 
       {/* Recommended Buffer Callout in Plain Language */}
-      <div className="rounded-xl border border-amber-200/90 bg-gradient-to-r from-amber-50/90 via-white to-amber-50/50 p-5 shadow-xs space-y-3">
-        <div className="flex items-center space-x-2.5 text-amber-800">
-          <div className="p-1.5 rounded-lg bg-amber-100 border border-amber-200">
-            <Lightbulb className="w-5 h-5 text-amber-700" />
+      <div className="rounded-xl border border-beige-300 bg-gradient-to-r from-beige-50/90 via-white to-beige-50/60 p-5 shadow-xs space-y-3">
+        <div className="flex items-center space-x-2.5">
+          <div className="p-1.5 rounded-lg bg-burgundy-50 border border-burgundy-200">
+            <Lightbulb className="w-5 h-5 text-burgundy-700" />
           </div>
-          <h3 className="text-base font-bold text-slate-900 tracking-tight">
+          <h3 className="text-base font-bold text-stone-900 tracking-tight">
             Recommended Trading Safety Buffer: {formatMW(summary.recommended_buffer_p90_mw)}
           </h3>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 font-semibold font-mono">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-burgundy-50 text-burgundy-900 border border-burgundy-200 font-semibold font-mono">
             90% Shortfall Protection
           </span>
         </div>
 
-        <div className="text-xs text-slate-700 leading-relaxed space-y-2">
+        <div className="text-xs text-stone-700 leading-relaxed space-y-2">
           <p>
             Across all 744 hours of January 2026, Day-Ahead wind forecasts at cutoff {cutoff} London exhibited a persistent positive bias of{' '}
-            <strong className="text-amber-800 font-semibold">
+            <strong className="text-burgundy-800 font-semibold">
               +{formatMW(summary.bias_mw)}
             </strong>
             . Submitting raw unadjusted forecasts into the day-ahead auction systematically leaves the trading desk short in physical delivery, triggering punitive System Buy Price (SBP) cash-out charges.
           </p>
           <p>
-            <strong className="text-slate-900 font-semibold">Trading Desk Rule: </strong>
-            To protect day-ahead bid positions with <strong className="text-amber-800">90% statistical confidence</strong>, deduct{' '}
-            <strong className="text-amber-800 font-semibold font-mono">
+            <strong className="text-stone-900 font-semibold">Trading Desk Rule: </strong>
+            To protect day-ahead bid positions with <strong className="text-burgundy-800">90% statistical confidence</strong>, deduct{' '}
+            <strong className="text-burgundy-800 font-semibold font-mono">
               {formatMW(summary.recommended_buffer_p90_mw)}
             </strong>{' '}
-            from the raw latest forecast before auction submission (<code className="px-1.5 py-0.5 rounded bg-white text-amber-800 border border-amber-200 font-mono shadow-2xs">Safe Bid = max(0, Raw Forecast - Buffer)</code>). For high-risk or price-spike periods, a P95 buffer of{' '}
-            <strong className="text-teal-700 font-semibold font-mono">
+            from the raw latest forecast before auction submission (<code className="px-1.5 py-0.5 rounded bg-white text-burgundy-800 border border-beige-300 font-mono shadow-2xs">Safe Bid = max(0, Raw Forecast - Buffer)</code>). For high-risk or price-spike periods, a P95 buffer of{' '}
+            <strong className="text-beige-800 font-semibold font-mono">
               {formatMW(summary.recommended_buffer_p95_mw)}
             </strong>{' '}
             ensures 95% protection against deficit cash-out risk.
@@ -327,7 +326,7 @@ export const AccuracyAnalyticsPage: React.FC = () => {
       <ChartCard
         title="Full-Month Day-Ahead Forecast vs Actual Generation (January 2026)"
         subtitle={`All 744 hourly delivery periods at ${cutoff} cutoff | Use the brush bar below to zoom and inspect any multi-day weather front`}
-        tooltip="Dual-line timeseries comparing day-ahead forecast vs actual generation outturn across all 31 days of January 2026. The amber dashed curve illustrates the P90 safe hedge volume. Drag the brush handles at the bottom to zoom into specific storm ramps or calm periods."
+        tooltip="Dual-line timeseries comparing day-ahead forecast vs actual generation outturn across all 31 days of January 2026. The warm bronze dashed curve illustrates the P90 safe hedge volume. Drag the brush handles at the bottom to zoom into specific storm ramps or calm periods."
         height="h-96"
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -335,18 +334,18 @@ export const AccuracyAnalyticsPage: React.FC = () => {
             data={timeseriesChartData}
             margin={{ top: 15, right: 20, left: 10, bottom: 10 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e8e5df" vertical={false} />
 
             <XAxis
               dataKey="timeLabel"
-              stroke="#64748b"
+              stroke="#78716c"
               fontSize={10}
               tickLine={false}
               interval={47} // show approximately 1 tick per 2 days
             />
 
             <YAxis
-              stroke="#64748b"
+              stroke="#78716c"
               fontSize={11}
               tickLine={false}
               axisLine={false}
@@ -358,32 +357,32 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                 if (!active || !payload?.length) return null;
                 const d = payload[0].payload;
                 return (
-                  <div className="bg-white border border-slate-200 p-3 rounded-lg shadow-xl text-xs space-y-1.5 font-sans">
-                    <p className="font-semibold text-slate-900 border-b border-slate-100 pb-1 flex justify-between">
+                  <div className="bg-white border border-stone-200 p-3 rounded-lg shadow-xl text-xs space-y-1.5 font-sans">
+                    <p className="font-semibold text-stone-900 border-b border-stone-100 pb-1 flex justify-between">
                       <span>{d.timeLabel} UTC</span>
-                      <span className="font-mono text-slate-500">{d.delivery_date}</span>
+                      <span className="font-mono text-stone-500">{d.delivery_date}</span>
                     </p>
                     <div className="flex justify-between space-x-4">
-                      <span className="text-teal-700 font-medium">Day-Ahead Forecast:</span>
-                      <span className="font-mono text-slate-900 font-semibold">{formatMW(d.forecast)}</span>
+                      <span className="text-burgundy-700 font-medium">Day-Ahead Forecast:</span>
+                      <span className="font-mono text-stone-900 font-semibold">{formatMW(d.forecast)}</span>
                     </div>
                     {d.actual !== null && (
-                      <div className="flex justify-between space-x-4 text-sky-700">
+                      <div className="flex justify-between space-x-4 text-stone-700">
                         <span className="font-medium">Actual Outturn:</span>
-                        <span className="font-mono text-slate-900 font-semibold">{formatMW(d.actual)}</span>
+                        <span className="font-mono text-stone-900 font-semibold">{formatMW(d.actual)}</span>
                       </div>
                     )}
                     {d.error !== null && (
                       <div className="flex justify-between space-x-4 text-[11px]">
-                        <span className={d.error > 0 ? 'text-amber-700' : 'text-teal-700'}>
+                        <span className={d.error > 0 ? 'text-burgundy-700' : 'text-beige-800'}>
                           {d.error > 0 ? 'Over-Forecast Miss:' : 'Under-Forecast Miss:'}
                         </span>
-                        <span className="font-mono font-medium text-slate-800">
+                        <span className="font-mono font-medium text-stone-800">
                           {d.error > 0 ? `+${d.error.toFixed(0)} MW` : `${d.error.toFixed(0)} MW`}
                         </span>
                       </div>
                     )}
-                    <div className="flex justify-between space-x-4 border-t border-slate-100 pt-1 text-amber-800">
+                    <div className="flex justify-between space-x-4 border-t border-stone-100 pt-1 text-beige-800">
                       <span>P90 Safe Hedge:</span>
                       <span className="font-mono font-semibold">{formatMW(d.p90Hedge)}</span>
                     </div>
@@ -394,7 +393,7 @@ export const AccuracyAnalyticsPage: React.FC = () => {
 
             <Legend
               wrapperStyle={{ paddingTop: '6px', fontSize: '11px' }}
-              formatter={(value) => <span className="text-slate-600">{value}</span>}
+              formatter={(value) => <span className="text-stone-700 font-medium">{value}</span>}
             />
 
             {/* P90 Hedge Band Line */}
@@ -402,7 +401,7 @@ export const AccuracyAnalyticsPage: React.FC = () => {
               type="monotone"
               dataKey="p90Hedge"
               name="P90 Safe Hedge"
-              stroke="#d97706"
+              stroke="#b59672"
               strokeWidth={1.5}
               strokeDasharray="4 4"
               dot={false}
@@ -413,10 +412,10 @@ export const AccuracyAnalyticsPage: React.FC = () => {
               type="monotone"
               dataKey="forecast"
               name="Day-Ahead Forecast (Cutoff)"
-              stroke="#0d9488"
+              stroke="#871736"
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: '#0d9488' }}
+              activeDot={{ r: 4, fill: '#871736' }}
             />
 
             {/* Actual Outturn Line */}
@@ -424,18 +423,18 @@ export const AccuracyAnalyticsPage: React.FC = () => {
               type="monotone"
               dataKey="actual"
               name="Actual Outturn (FUELHH)"
-              stroke="#0284c7"
+              stroke="#282520"
               strokeWidth={1.5}
               dot={false}
-              activeDot={{ r: 4, fill: '#0284c7' }}
+              activeDot={{ r: 4, fill: '#282520' }}
             />
 
             {/* Month-Wide Interactive Brush Slider */}
             <Brush
               dataKey="timeLabel"
               height={32}
-              stroke="#0d9488"
-              fill="#f8fafc"
+              stroke="#871736"
+              fill="#f7f6f3"
               tickFormatter={(idx) => {
                 const pt = timeseriesChartData[idx];
                 return pt ? pt.displayDate : '';
@@ -451,22 +450,22 @@ export const AccuracyAnalyticsPage: React.FC = () => {
         <ChartCard
           title="Forecast Error Distribution (Forecast - Actual)"
           subtitle="Histogram in 500 MW bins illustrating positive skew and tail shortfall risk"
-          tooltip="Visualizes the distribution of hourly errors (Forecast - Actual). Bins to the right of zero indicate over-forecasting (desk shortfall). The amber marker highlights the 90th percentile threshold."
+          tooltip="Visualizes the distribution of hourly errors (Forecast - Actual). Bins to the right of zero indicate over-forecasting (desk shortfall). The marker highlights the zero-error boundary."
           height="h-80"
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={distData || []} margin={{ top: 15, right: 15, left: 0, bottom: 25 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e8e5df" vertical={false} />
               <XAxis
                 dataKey="bin_label"
-                stroke="#64748b"
+                stroke="#78716c"
                 fontSize={10}
                 interval={1}
                 angle={-30}
                 textAnchor="end"
               />
               <YAxis
-                stroke="#64748b"
+                stroke="#78716c"
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
@@ -477,24 +476,24 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                   if (!active || !payload?.length) return null;
                   const d = payload[0].payload;
                   return (
-                    <div className="bg-white border border-slate-200 p-2.5 rounded-lg text-xs space-y-1 shadow-lg font-mono">
-                      <p className="font-semibold text-slate-900 font-sans">Bin: {d.bin_label} MW</p>
-                      <p className="text-teal-700">Frequency: {d.frequency_pct.toFixed(1)}%</p>
-                      <p className="text-slate-500">Count: {d.count} hours</p>
+                    <div className="bg-white border border-stone-200 p-2.5 rounded-lg text-xs space-y-1 shadow-lg font-mono">
+                      <p className="font-semibold text-stone-900 font-sans">Bin: {d.bin_label} MW</p>
+                      <p className="text-burgundy-700">Frequency: {d.frequency_pct.toFixed(1)}%</p>
+                      <p className="text-stone-500">Count: {d.count} hours</p>
                     </div>
                   );
                 }}
               />
               <ReferenceLine
                 x="[0, 500)"
-                stroke="#94a3b8"
+                stroke="#78716c"
                 strokeDasharray="3 3"
-                label={{ value: 'Zero Error', fill: '#64748b', fontSize: 10, position: 'top' }}
+                label={{ value: 'Zero Error', fill: '#78716c', fontSize: 10, position: 'top' }}
               />
               <Bar
                 dataKey="frequency_pct"
                 name="Frequency (%)"
-                fill="#0284c7"
+                fill="#871736"
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>
@@ -510,16 +509,16 @@ export const AccuracyAnalyticsPage: React.FC = () => {
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={hourlyData || []} margin={{ top: 15, right: 15, left: 0, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e8e5df" vertical={false} />
               <XAxis
                 dataKey="hour"
-                stroke="#64748b"
+                stroke="#78716c"
                 fontSize={11}
                 tickLine={false}
                 tickFormatter={(h) => `${h}:00`}
               />
               <YAxis
-                stroke="#64748b"
+                stroke="#78716c"
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
@@ -530,13 +529,13 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                   if (!active || !payload?.length) return null;
                   const d = payload[0].payload;
                   return (
-                    <div className="bg-white border border-slate-200 p-2.5 rounded-lg text-xs space-y-1 shadow-lg font-mono">
-                      <p className="font-semibold text-slate-900 font-sans">Hour {d.hour}:00 UTC</p>
-                      <p className="text-teal-700">MAE: {formatMW(d.mae)}</p>
-                      <p className="text-amber-700">
+                    <div className="bg-white border border-stone-200 p-2.5 rounded-lg text-xs space-y-1 shadow-lg font-mono">
+                      <p className="font-semibold text-stone-900 font-sans">Hour {d.hour}:00 UTC</p>
+                      <p className="text-burgundy-700">MAE: {formatMW(d.mae)}</p>
+                      <p className="text-beige-800">
                         Bias: {d.bias > 0 ? `+${d.bias.toFixed(0)}` : d.bias.toFixed(0)} MW
                       </p>
-                      <p className="text-slate-700">
+                      <p className="text-stone-700">
                         P90 Shortfall: {formatMW(d.p90_over_forecast)}
                       </p>
                     </div>
@@ -544,8 +543,8 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                 }}
               />
               <Legend wrapperStyle={{ fontSize: '11px' }} />
-              <Bar dataKey="mae" name="Hourly MAE (MW)" fill="#0d9488" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="bias" name="Hourly Bias (MW)" fill="#d97706" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="mae" name="Hourly MAE (MW)" fill="#871736" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="bias" name="Hourly Bias (MW)" fill="#cbb08f" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -560,10 +559,10 @@ export const AccuracyAnalyticsPage: React.FC = () => {
       >
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={horizonData || []} margin={{ top: 15, right: 15, left: 0, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-            <XAxis dataKey="horizon_bucket" stroke="#64748b" fontSize={11} tickLine={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e8e5df" vertical={false} />
+            <XAxis dataKey="horizon_bucket" stroke="#78716c" fontSize={11} tickLine={false} />
             <YAxis
-              stroke="#64748b"
+              stroke="#78716c"
               fontSize={11}
               tickLine={false}
               axisLine={false}
@@ -574,35 +573,35 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                 if (!active || !payload?.length) return null;
                 const d = payload[0].payload;
                 return (
-                  <div className="bg-white border border-slate-200 p-2.5 rounded-lg text-xs space-y-1 shadow-lg font-mono">
-                    <p className="font-semibold text-slate-900 font-sans">{d.horizon_bucket}</p>
-                    <p className="text-teal-700">MAE: {formatMW(d.mae)}</p>
-                    <p className="text-rose-600">RMSE: {formatMW(d.rmse)}</p>
-                    <p className="text-amber-700">
+                  <div className="bg-white border border-stone-200 p-2.5 rounded-lg text-xs space-y-1 shadow-lg font-mono">
+                    <p className="font-semibold text-stone-900 font-sans">{d.horizon_bucket}</p>
+                    <p className="text-burgundy-700">MAE: {formatMW(d.mae)}</p>
+                    <p className="text-burgundy-900">RMSE: {formatMW(d.rmse)}</p>
+                    <p className="text-beige-800">
                       Bias: {d.bias > 0 ? `+${d.bias.toFixed(0)}` : d.bias.toFixed(0)} MW
                     </p>
-                    <p className="text-slate-600">WAPE: {d.wape.toFixed(1)}%</p>
+                    <p className="text-stone-600">WAPE: {d.wape.toFixed(1)}%</p>
                   </div>
                 );
               }}
             />
             <Legend wrapperStyle={{ fontSize: '11px' }} />
-            <Bar dataKey="mae" name="MAE (MW)" fill="#0d9488" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="rmse" name="RMSE (MW)" fill="#e11d48" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="bias" name="Bias (MW)" fill="#d97706" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="mae" name="MAE (MW)" fill="#871736" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="rmse" name="RMSE (MW)" fill="#541025" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="bias" name="Bias (MW)" fill="#cbb08f" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
 
       {/* Row 4: Sortable Daily Error Table */}
-      <div className="rounded-xl border border-slate-200/90 bg-white p-5 overflow-hidden shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-200/80">
+      <div className="rounded-xl border border-stone-200/90 bg-white p-5 overflow-hidden shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-stone-200/80">
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 tracking-wide flex items-center space-x-2">
+            <h3 className="text-sm font-semibold text-stone-900 tracking-wide flex items-center space-x-2">
               <span>Daily Error Verification Schedule (31 Days)</span>
-              <span className="text-[11px] text-slate-500 font-mono">Cutoff: {cutoff}</span>
+              <span className="text-[11px] text-stone-500 font-mono">Cutoff: {cutoff}</span>
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-stone-500 mt-0.5">
               Click table headers to sort ascending or descending. Dynamic expanding buffer is computed with strictly past data.
             </p>
           </div>
@@ -610,16 +609,16 @@ export const AccuracyAnalyticsPage: React.FC = () => {
           <button
             id="download-daily-csv-button"
             onClick={handleDownloadDailyCsv}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white flex items-center space-x-1.5 shadow-2xs transition-colors self-start sm:self-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-burgundy-700 hover:bg-burgundy-800 text-white flex items-center space-x-1.5 shadow-2xs transition-colors self-start sm:self-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-burgundy-600"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Download Daily CSV</span>
           </button>
         </div>
 
-        <div className="overflow-x-auto max-h-[440px] rounded border border-slate-200">
+        <div className="overflow-x-auto max-h-[440px] rounded border border-stone-200">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-600 uppercase font-mono sticky top-0 border-b border-slate-200 z-10 shadow-2xs select-none">
+            <thead className="bg-beige-100/80 text-stone-700 uppercase font-mono sticky top-0 border-b border-stone-200 z-10 shadow-2xs select-none">
               <tr>
                 <th
                   role="button"
@@ -631,18 +630,18 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                       handleSort('delivery_date');
                     }
                   }}
-                  className="py-2.5 px-3 cursor-pointer hover:text-slate-900 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-teal-500"
+                  className="py-2.5 px-3 cursor-pointer hover:text-stone-900 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-burgundy-600"
                 >
                   <div className="flex items-center space-x-1">
                     <span>Delivery Date</span>
                     {sortField === 'delivery_date' ? (
                       sortDirection === 'asc' ? (
-                        <ChevronUp className="w-3.5 h-3.5 text-teal-600" />
+                        <ChevronUp className="w-3.5 h-3.5 text-burgundy-700" />
                       ) : (
-                        <ChevronDown className="w-3.5 h-3.5 text-teal-600" />
+                        <ChevronDown className="w-3.5 h-3.5 text-burgundy-700" />
                       )
                     ) : (
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <ArrowUpDown className="w-3 h-3 text-stone-400" />
                     )}
                   </div>
                 </th>
@@ -657,18 +656,18 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                       handleSort('bias');
                     }
                   }}
-                  className="py-2.5 px-3 text-right cursor-pointer hover:text-slate-900 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-teal-500"
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-stone-900 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-burgundy-600"
                 >
                   <div className="flex items-center justify-end space-x-1">
                     <span>Bias (MW)</span>
                     {sortField === 'bias' ? (
                       sortDirection === 'asc' ? (
-                        <ChevronUp className="w-3.5 h-3.5 text-teal-600" />
+                        <ChevronUp className="w-3.5 h-3.5 text-burgundy-700" />
                       ) : (
-                        <ChevronDown className="w-3.5 h-3.5 text-teal-600" />
+                        <ChevronDown className="w-3.5 h-3.5 text-burgundy-700" />
                       )
                     ) : (
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <ArrowUpDown className="w-3 h-3 text-stone-400" />
                     )}
                   </div>
                 </th>
@@ -683,18 +682,18 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                       handleSort('mae');
                     }
                   }}
-                  className="py-2.5 px-3 text-right cursor-pointer hover:text-slate-900 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-teal-500"
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-stone-900 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-burgundy-600"
                 >
                   <div className="flex items-center justify-end space-x-1">
                     <span>MAE (MW)</span>
                     {sortField === 'mae' ? (
                       sortDirection === 'asc' ? (
-                        <ChevronUp className="w-3.5 h-3.5 text-teal-600" />
+                        <ChevronUp className="w-3.5 h-3.5 text-burgundy-700" />
                       ) : (
-                        <ChevronDown className="w-3.5 h-3.5 text-teal-600" />
+                        <ChevronDown className="w-3.5 h-3.5 text-burgundy-700" />
                       )
                     ) : (
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <ArrowUpDown className="w-3 h-3 text-stone-400" />
                     )}
                   </div>
                 </th>
@@ -709,18 +708,18 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                       handleSort('rmse');
                     }
                   }}
-                  className="py-2.5 px-3 text-right cursor-pointer hover:text-slate-900 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-teal-500"
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-stone-900 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-burgundy-600"
                 >
                   <div className="flex items-center justify-end space-x-1">
                     <span>RMSE (MW)</span>
                     {sortField === 'rmse' ? (
                       sortDirection === 'asc' ? (
-                        <ChevronUp className="w-3.5 h-3.5 text-teal-600" />
+                        <ChevronUp className="w-3.5 h-3.5 text-burgundy-700" />
                       ) : (
-                        <ChevronDown className="w-3.5 h-3.5 text-teal-600" />
+                        <ChevronDown className="w-3.5 h-3.5 text-burgundy-700" />
                       )
                     ) : (
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <ArrowUpDown className="w-3 h-3 text-stone-400" />
                     )}
                   </div>
                 </th>
@@ -735,18 +734,18 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                       handleSort('wape');
                     }
                   }}
-                  className="py-2.5 px-3 text-right cursor-pointer hover:text-slate-900 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-teal-500"
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-stone-900 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-burgundy-600"
                 >
                   <div className="flex items-center justify-end space-x-1">
                     <span>WAPE (%)</span>
                     {sortField === 'wape' ? (
                       sortDirection === 'asc' ? (
-                        <ChevronUp className="w-3.5 h-3.5 text-teal-600" />
+                        <ChevronUp className="w-3.5 h-3.5 text-burgundy-700" />
                       ) : (
-                        <ChevronDown className="w-3.5 h-3.5 text-teal-600" />
+                        <ChevronDown className="w-3.5 h-3.5 text-burgundy-700" />
                       )
                     ) : (
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <ArrowUpDown className="w-3 h-3 text-stone-400" />
                     )}
                   </div>
                 </th>
@@ -761,18 +760,18 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                       handleSort('p90_over_forecast');
                     }
                   }}
-                  className="py-2.5 px-3 text-right cursor-pointer hover:text-slate-900 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-teal-500"
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-stone-900 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-burgundy-600"
                 >
                   <div className="flex items-center justify-end space-x-1">
                     <span>P90 Miss (MW)</span>
                     {sortField === 'p90_over_forecast' ? (
                       sortDirection === 'asc' ? (
-                        <ChevronUp className="w-3.5 h-3.5 text-teal-600" />
+                        <ChevronUp className="w-3.5 h-3.5 text-burgundy-700" />
                       ) : (
-                        <ChevronDown className="w-3.5 h-3.5 text-teal-600" />
+                        <ChevronDown className="w-3.5 h-3.5 text-burgundy-700" />
                       )
                     ) : (
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <ArrowUpDown className="w-3 h-3 text-stone-400" />
                     )}
                   </div>
                 </th>
@@ -787,50 +786,50 @@ export const AccuracyAnalyticsPage: React.FC = () => {
                       handleSort('recommended_buffer_mw');
                     }
                   }}
-                  className="py-2.5 px-3 text-right cursor-pointer hover:text-slate-900 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+                  className="py-2.5 px-3 text-right cursor-pointer hover:text-stone-900 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-burgundy-600"
                 >
                   <div className="flex items-center justify-end space-x-1">
                     <span>Dynamic Buffer (MW)</span>
                     {sortField === 'recommended_buffer_mw' ? (
                       sortDirection === 'asc' ? (
-                        <ChevronUp className="w-3.5 h-3.5 text-amber-600" />
+                        <ChevronUp className="w-3.5 h-3.5 text-burgundy-700" />
                       ) : (
-                        <ChevronDown className="w-3.5 h-3.5 text-amber-600" />
+                        <ChevronDown className="w-3.5 h-3.5 text-burgundy-700" />
                       )
                     ) : (
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      <ArrowUpDown className="w-3 h-3 text-stone-400" />
                     )}
                   </div>
                 </th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-100 font-mono text-slate-700">
+            <tbody className="divide-y divide-stone-100 font-mono text-stone-700">
               {sortedDailyData.map((row) => (
-                <tr key={row.delivery_date} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-2 px-3 font-semibold text-slate-800">{row.delivery_date}</td>
+                <tr key={row.delivery_date} className="hover:bg-beige-50/50 transition-colors">
+                  <td className="py-2 px-3 font-semibold text-stone-800">{row.delivery_date}</td>
 
                   <td
                     className={`py-2 px-3 text-right font-medium ${
-                      row.bias > 0 ? 'text-amber-700' : 'text-teal-700'
+                      row.bias > 0 ? 'text-burgundy-700' : 'text-stone-600'
                     }`}
                   >
                     {row.bias > 0 ? `+${row.bias.toFixed(0)}` : row.bias.toFixed(0)}
                   </td>
 
-                  <td className="py-2 px-3 text-right text-slate-700">{row.mae.toFixed(0)}</td>
+                  <td className="py-2 px-3 text-right text-stone-700">{row.mae.toFixed(0)}</td>
 
-                  <td className="py-2 px-3 text-right text-rose-600">{row.rmse.toFixed(0)}</td>
+                  <td className="py-2 px-3 text-right text-burgundy-900 font-semibold">{row.rmse.toFixed(0)}</td>
 
-                  <td className="py-2 px-3 text-right text-teal-700 font-semibold">
+                  <td className="py-2 px-3 text-right text-stone-800 font-semibold">
                     {row.wape.toFixed(1)}%
                   </td>
 
-                  <td className="py-2 px-3 text-right text-amber-700">
+                  <td className="py-2 px-3 text-right text-beige-800 font-medium">
                     {row.p90_over_forecast.toFixed(0)}
                   </td>
 
-                  <td className="py-2 px-3 text-right text-amber-800 font-semibold">
+                  <td className="py-2 px-3 text-right text-burgundy-800 font-bold">
                     {row.recommended_buffer_mw > 0 ? row.recommended_buffer_mw.toFixed(0) : '—'}
                   </td>
                 </tr>

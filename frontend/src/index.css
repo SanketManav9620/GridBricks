@@ -8,38 +8,38 @@
   }
 
   body {
-    @apply bg-[#f8fafc] text-slate-800 font-sans antialiased min-h-screen selection:bg-teal-600 selection:text-white;
+    @apply bg-[#f7f6f3] text-stone-900 font-sans antialiased min-h-screen selection:bg-burgundy-700 selection:text-white;
   }
 }
 
-/* Custom refined scrollbar for off-white theme */
+/* Custom refined scrollbar for greyish & beige theme */
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #f4f2ee;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d7d2c8;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #ada597;
 }
 
-/* Light theme card elevation utility classes */
+/* Greyish-beige card elevation utility classes */
 .card-elevation {
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px 0 rgba(79, 74, 64, 0.04), 0 1px 2px -1px rgba(79, 74, 64, 0.04);
 }
 
 .card-elevation-hover {
   transition: all 0.2s ease-in-out;
 }
 .card-elevation-hover:hover {
-  box-shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 8px -1px rgba(79, 74, 64, 0.08), 0 2px 4px -2px rgba(79, 74, 64, 0.04);
   transform: translateY(-1px);
 }

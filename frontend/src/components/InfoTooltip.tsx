@@ -14,7 +14,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({ content, className }) 
     <div className={cn('relative inline-flex items-center', className)}>
       <button
         type="button"
-        className="text-slate-400 hover:text-teal-600 transition-colors p-0.5 rounded focus:outline-none"
+        className="text-stone-400 hover:text-burgundy-700 transition-colors p-0.5 rounded focus:outline-none"
         onMouseEnter={() => setVisible(true)}
         onMouseLeave={() => setVisible(false)}
         onClick={() => setVisible(!visible)}
@@ -24,7 +24,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({ content, className }) 
       </button>
 
       {visible && (
-        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2.5 text-xs text-slate-700 bg-white border border-slate-200/90 rounded-lg shadow-xl pointer-events-none">
+        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2.5 text-xs text-stone-700 bg-white border border-stone-200/90 rounded-lg shadow-xl pointer-events-none">
           {content}
           <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-white" />
         </div>

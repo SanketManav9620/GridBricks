@@ -8,40 +8,81 @@ export default {
     extend: {
       colors: {
         canvas: {
-          50: '#f8fafc',
-          100: '#f1f5f9',
-          200: '#e2e8f0',
+          50: '#fdfcfb',
+          100: '#f7f6f3', // signature soft greyish-beige backdrop
+          200: '#edeae4',
         },
-        navy: {
-          950: '#060a14',
-          900: '#0b132b',
-          850: '#111c3d',
-          800: '#1c2541',
-          700: '#2b3658',
-          600: '#3a476f',
+        // Signature Burgundy Palette
+        burgundy: {
+          50: '#fdf3f5',
+          100: '#fbe6ea',
+          200: '#f6ced7',
+          300: '#eda5b5',
+          400: '#de6f89',
+          500: '#cb4165',
+          600: '#aa2448',
+          700: '#871736', // Primary Brand Burgundy
+          800: '#6f142e', // Deep Wine
+          900: '#561225', // Midnight Burgundy
+          950: '#380716',
         },
+        // Warm Oatmeal & Sand Beige Palette
+        beige: {
+          50: '#faf8f5',
+          100: '#f5f0e8', // Soft creamy beige
+          200: '#ebdccb', // Warm sand beige
+          300: '#ddc5a9',
+          400: '#cbb08f',
+          500: '#b59672',
+          600: '#9c7d5b',
+          700: '#7d6349',
+          800: '#64503c',
+          900: '#4f3f31',
+        },
+        // Elegant Warm Stone & Greyish Neutrals
+        warmgrey: {
+          50: '#fbfaf9',
+          100: '#f4f2ee',
+          200: '#e8e5df',
+          300: '#d7d2c8',
+          400: '#ada597',
+          500: '#827a6c',
+          600: '#645e52',
+          700: '#4f4a40',
+          800: '#3c3831',
+          900: '#282520',
+        },
+        // Backward compatibility mappings directed into greyish-beige-burgundy
         teal: {
-          50: '#f0fdfa',
-          100: '#ccfbf1',
-          200: '#99f6e4',
-          300: '#5eead4',
-          400: '#2dd4bf',
-          500: '#14b8a6',
-          600: '#0d9488',
-          700: '#0f766e',
-          800: '#115e59',
-          900: '#134e4a',
+          50: '#fdf3f5',
+          100: '#fbe6ea',
+          200: '#f6ced7',
+          300: '#eda5b5',
+          400: '#de6f89',
+          500: '#cb4165',
+          600: '#871736',
+          700: '#6f142e',
+          800: '#561225',
+          900: '#380716',
         },
         amber: {
-          50: '#fffbeb',
-          100: '#fef3c7',
-          200: '#fde68a',
-          300: '#fcd34d',
-          400: '#fbbf24',
-          500: '#f59e0b',
-          600: '#d97706',
-          700: '#b45309',
-          800: '#92400e',
+          50: '#faf8f5',
+          100: '#f5f0e8',
+          200: '#ebdccb',
+          300: '#ddc5a9',
+          400: '#cbb08f',
+          500: '#b59672',
+          600: '#9c7d5b',
+          700: '#7d6349',
+          800: '#64503c',
+        },
+        navy: {
+          950: '#282520',
+          900: '#3c3831',
+          850: '#4f4a40',
+          800: '#645e52',
+          700: '#827a6c',
+          600: '#ada597',
         },
       },
       fontFamily: {
@@ -49,8 +90,8 @@ export default {
         mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace'],
       },
       boxShadow: {
-        'card': '0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04)',
-        'card-hover': '0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04)',
+        'card': '0 1px 3px 0 rgba(79, 74, 64, 0.05), 0 1px 2px -1px rgba(79, 74, 64, 0.04)',
+        'card-hover': '0 4px 6px -1px rgba(79, 74, 64, 0.08), 0 2px 4px -2px rgba(79, 74, 64, 0.04)',
       }
     },
   },

@@ -8,39 +8,61 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Live Deployment Demo (Vercel)**: [https://uk-wind-trading-desk.vercel.app](https://uk-wind-trading-desk.vercel.app) *(Placeholder)*
+> **Live Deployment Demo (Vercel)**: [https://uk-wind-trading-desk.vercel.app](https://uk-wind-trading-desk.vercel.app) *(or your deployed Vercel/Heroku app URL)*  
+> **Submission Form**: [https://forms.cloud.microsoft/r/FTX6K2bbnU](https://forms.cloud.microsoft/r/FTX6K2bbnU)  
+> **Video Presentation Guide**: See [docs/VIDEO_PRESENTATION_SCRIPT.md](docs/VIDEO_PRESENTATION_SCRIPT.md) for the complete 10-minute rehearsal script.
 
 ---
 
-## Executive Summary
+## 1. Executive Summary & Problem Setting
 
-The **UK Wind Power Day-Ahead Trading Desk** is an institutional-grade decision-support platform designed for energy utility traders purchasing power on day $D-1$ before UK power auction gates close (EPEX SPOT and Nord Pool). The platform ingests real-time and historical National Grid wind generation actuals (`FUELHH`) and forecast revisions (`WINDFOR`) from the Elexon Insights API (BMRS), dynamically enforces decision-time cutoffs (e.g. 09:00 or 11:00 London time) to eliminate lookahead bias, and quantifies historical forecast uncertainty.
+The **UK Wind Power Day-Ahead Trading Desk** is an institutional-grade decision-support platform engineered for electricity procurement teams at UK energy utilities. 
 
-By combining intraday revision tracking with an asymmetric **P90 safety buffer** (calculated via expanding historical windows) and an interactive **Thermal Procurement & Net Deficit Calculator**, the trading desk can accurately determine how much additional wholesale electricity must be procured (e.g. from CCGT/thermal plants or day-ahead power auctions) to meet consumer demand while insulating the utility from punitive real-time balancing cash-out penalties.
+To serve their retail consumers, utilities must purchase required power from the UK wholesale day-ahead market (EPEX SPOT and Nord Pool). Crucially, purchase decisions must be locked in on **day $D-1$ before auction gate closure** (typically 09:00–11:00 London time) for physical delivery across 48 half-hour settlement periods on **delivery day $D$**.
 
----
+Because power generation from renewable sources like wind is weather-dependent, procurement teams need to understand:
+1. **Latest Renewable Forecasts**: The exact point-in-time Numerical Weather Prediction (NWP) wind generation forecasts available strictly prior to the D-1 auction gate.
+2. **Quantified Forecast Accuracy & Risk Buffering**: The historical error distribution (Mean Bias, MAE, RMSE, WAPE, P90 shortfall) to size an asymmetric **safety buffer** that protects against severe real-time balancing cash-out penalties (System Buy Price).
+3. **Thermal Procurement Deficit Calculation**: How much additional wholesale electricity must be procured (e.g. from CCGT/thermal plants or day-ahead power auctions) beyond wind to cover consumer demand across every settlement period.
 
-## Application Previews
-
-| Day-Ahead Decision Desk | Accuracy & Risk Backtesting |
-|:---:|:---:|
-| ![Day-Ahead Desk](docs/screenshots/desk_page.png) | ![Accuracy & Backtesting](docs/screenshots/accuracy_page.png) |
-| *Latest forecast at 09:00 gate, earlier revision trajectories, asymmetric P90 safety band, and downloadable settlement schedule.* | *Month-long MAE/RMSE/WAPE metrics, diurnal error profiles, horizon decay curves, and 500 MW risk distribution.* |
-
-| Methodology & Gate Reference |
-|:---:|
-| ![Methodology Reference](docs/screenshots/methodology_page.png) |
-| *Detailed reference explaining auction gate logic, timezone normalization, mathematical metric definitions, and risk buffer sizing.* |
+This application provides the end-to-end analytical pipeline and trading portal covering the **January 2026** evaluation period.
 
 ---
 
-## Directory & File Structure
+## 2. Verified Data Sources & Official Elexon BMRS Links
+
+Per the assignment specification, data is sourced exclusively from the **Elexon Balancing Mechanism Reporting Service (BMRS)** Insights API:
+
+| Dataset | Official Documentation Link | API Endpoint Stream | Key Fields Used |
+|:---|:---|:---|:---|
+| **Actual Generation** | [BMRS FUELHH Endpoint Documentation](https://bmrs.elexon.co.uk/api-documentation/endpoint/datasets/FUELHH/stream) | `https://data.elexon.co.uk/bmrs/api/v1/datasets/FUELHH/stream` | `fuelType == "WIND"`, `startTime` (30-min settlement period), `generation` (MW) |
+| **Forecasted Generation** | [BMRS WINDFOR Endpoint Documentation](https://bmrs.elexon.co.uk/api-documentation/endpoint/datasets/WINDFOR/stream) | `https://data.elexon.co.uk/bmrs/api/v1/datasets/WINDFOR/stream` | `startTime` (hourly target time), `publishTime` (NWP model release), `generation` (MW) |
+
+> **Pre-Cached Datasets**: Compressed and deduplicated datasets covering **2025-12-31 to 2026-02-02** are included directly in `backend/data/` (`actuals.csv.gz` and `forecasts.csv.gz`), enabling immediate offline and local execution without external API keys or rate limits.
+
+---
+
+## 3. Visual Identity: Greyish, Warm Beige & Burgundy Palette
+
+The user interface has been custom-crafted using an institutional color system specified for energy trading desks:
+
+- **Greyish Canvas (`#f7f6f3` / Stone neutrals)**: Subtle warm grey backdrop providing soothing, high-contrast readability without harsh glare.
+- **Warm Sand Beige (`#faf8f5`, `#f5f0e8`, `#ebdccb`)**: Used for secondary cards, table headers, and the **P90 Downside Risk Hedge Band** (`#ddc5a9`).
+- **Signature Burgundy (`#871736`, `#6f142e`, `#561225`)**: Primary brand color representing British institutional heritage, used for active navigation pills, the latest D-1 forecast curve, thermal procurement requirements, and primary action buttons.
+
+---
+
+## 4. Directory & File Structure
 
 ```text
 GridBricks/
 ├── .github/
 │   └── workflows/
 │       └── ci.yml                 # GitHub Actions CI workflow (lint, typecheck, pytest, vitest, build)
+├── api/                           # Vercel Serverless Function entrypoint
+│   ├── index.py                   # ASGI serverless adapter for FastAPI
+│   ├── requirements.txt           # Lean serverless runtime dependencies
+│   └── data/                      # Embedded gzipped snapshots for serverless execution
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py            # Backend package initialization
@@ -52,25 +74,25 @@ GridBricks/
 │   │   ├── repository.py          # In-memory thread-safe data repository singleton with live fallback
 │   │   └── schemas.py             # Pydantic v2 request/response schemas matching OpenAPI specs
 │   ├── data/
-│   │   ├── actuals_snapshot.csv.gz    # Compressed National Grid FUELHH actual generation dataset
-│   │   └── forecasts_snapshot.csv.gz  # Compressed National Grid WINDFOR forecast revisions dataset
+│   │   ├── actuals.csv.gz         # Compressed National Grid FUELHH actual generation dataset
+│   │   └── forecasts.csv.gz       # Compressed National Grid WINDFOR forecast revisions dataset
 │   ├── tests/
 │   │   ├── test_analytics.py      # Unit tests for analytics with hand-computed edge-case fixtures
 │   │   ├── test_api.py            # API endpoint integration tests via FastAPI TestClient
 │   │   ├── test_elexon_client.py  # Mocked HTTP unit tests for Elexon ingestion client
 │   │   ├── test_ingest.py         # Unit tests for CLI ingestion script and deduplication
 │   │   └── test_repository.py     # Repository caching, querying, and fallback tests
-│   ├── Dockerfile                 # Multi-stage slim Python 3.11 container with unprivileged user
+│   ├── Dockerfile                 # Multi-stage slim Python 3.13 container with unprivileged user
 │   ├── requirements.txt           # Production Python dependencies and quality toolpins
 │   └── pyproject.toml             # Configuration for Ruff linter/formatter, Mypy, and Pytest
 ├── frontend/
 │   ├── public/
 │   │   └── favicon.svg            # Vector turbine SVG favicon
 │   ├── src/
-│   │   ├── components/            # Reusable UI component library
+│   │   ├── components/            # Reusable UI component library (Greyish, Beige & Burgundy)
 │   │   │   ├── __tests__/         # Vitest + React Testing Library component tests
 │   │   │   ├── AppShell.tsx       # Navigation header, live status, and layout wrapper
-│   │   │   ├── ChartCard.tsx      # Composable card container with header actions and full-screen view
+│   │   │   ├── ChartCard.tsx      # Composable card container with header actions
 │   │   │   ├── CutoffSelect.tsx   # Interactive gate cutoff selector (09:00, 11:00, 12:00, 14:00)
 │   │   │   ├── DateStepper.tsx    # Delivery date carousel navigation with dropdown picker
 │   │   │   ├── EmptyState.tsx     # Graceful empty data indicator
@@ -82,227 +104,167 @@ GridBricks/
 │   │   │   ├── api.ts             # Typed REST fetch client for backend endpoints
 │   │   │   └── utils.ts           # Number formatting (MW/GW), date helpers, and class merging
 │   │   ├── pages/
-│   │   │   ├── AccuracyPage.tsx   # Comprehensive backtest, error distributions, and diurnal analysis
-│   │   │   ├── DayAheadDeskPage.tsx # Core trading view with latest forecast, risk band, and revisions
-│   │   │   └── MethodologyPage.tsx# Educational documentation of formulas, auction rules, and assumptions
+│   │   │   ├── AccuracyAnalyticsPage.tsx # Backtest, error distributions, and diurnal analysis
+│   │   │   ├── DayAheadDeskPage.tsx      # Core trading view with latest forecast, P90 risk band, and thermal calculator
+│   │   │   └── MethodologyPage.tsx       # Educational documentation of formulas, auction rules, and assumptions
 │   │   ├── App.tsx                # Client-side router configuration
-│   │   ├── index.css              # Custom styling, dark navy color palette, and glowing effects
+│   │   ├── index.css              # Custom styling, Greyish-Beige-Burgundy palette, and scrollbars
 │   │   ├── main.tsx               # Application root mount with TanStack Query provider
 │   │   └── test/setup.ts          # Vitest and jest-dom matchers configuration
 │   ├── Dockerfile                 # Multi-stage production container with Nginx reverse proxy
 │   ├── nginx.conf                 # Nginx proxy routing /api to backend:8000 with gzip compression
 │   ├── package.json               # Frontend dependencies and npm scripts
-│   ├── tailwind.config.js         # Tailored energy trading color system (Navy, Teal, Amber, Rose)
+│   ├── tailwind.config.js         # Tailored energy trading color system (Burgundy, Beige, Warmgrey)
 │   ├── tsconfig.json              # TypeScript strict compiler configuration
 │   └── vite.config.ts             # Vite bundler and local development proxy configuration
 ├── docs/
 │   ├── ARCHITECTURE.md            # Detailed system architecture and Mermaid data flow diagrams
 │   ├── ASSUMPTIONS.md             # Comprehensive domain assumptions, trade-offs, and limitations
-│   ├── DATA_FINDINGS.md           # Empirical analysis and observations from Elexon BMRS API exploratory pass
-│   └── screenshots/               # High-resolution application screenshots
-├── scripts/
-│   └── explore_elexon.py          # Data discovery script verifying Elexon API parameters and distributions
-├── .dockerignore                  # Docker build context exclusions
-├── .gitignore                     # Git tracking exclusions
-├── .pre-commit-config.yaml        # Git pre-commit hooks (Ruff, Mypy, trailing whitespace)
+│   ├── DATA_FINDINGS.md           # Empirical analysis and observations from Elexon BMRS exploratory pass
+│   └── VIDEO_PRESENTATION_SCRIPT.md # Word-for-word rehearsal script for the 10-minute unlisted YouTube video
 ├── docker-compose.yml             # Single-command local container orchestration
+├── vercel.json                    # Vercel serverless routing configuration
 └── README.md                      # Primary project documentation and quickstart guide
 ```
 
 ---
 
-## Quickstart: Running the Application
+## 5. Quickstart: Running on Your Local Machine
+
+You can run the application either with **Docker Compose** or **locally with Python and Node.js**.
 
 ### Option A: Running with Docker (Recommended)
 
-The easiest way to run the full application with all services pre-configured:
-
-#### Prerequisites
-- [Docker Engine](https://docs.docker.com/engine/install/) (v24.0+)
-- [Docker Compose](https://docs.docker.com/compose/install/) (v2.20+)
-
-#### Launch Services
 ```bash
-# Clone the repository
-git clone https://github.com/gridbricks/uk-wind-trading-desk.git
-cd uk-wind-trading-desk
-
-# Build and start all containers in detached mode
+# Build and launch both frontend and backend containers
 docker compose up --build -d
 ```
 
-#### Access Endpoints
 - **Frontend Web UI**: [http://localhost:3000](http://localhost:3000)
 - **FastAPI Backend**: [http://localhost:8000](http://localhost:8000)
-- **Interactive OpenAPI Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **API Health Check**: [http://localhost:3000/api/health](http://localhost:3000/api/health)
+- **Interactive OpenAPI Specs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-To view live container logs or shut down:
+To stop services:
 ```bash
-docker compose logs -f
 docker compose down
 ```
 
 ---
 
-### Option B: Running Locally Without Docker
+### Option B: Running Locally (Fast & Direct)
 
-#### Prerequisites
-- **Python**: 3.11, 3.12, or 3.13
-- **Node.js**: 20.x or 22.x LTS and `npm`
-
-#### 1. Backend Setup
+#### 1. Start the Python Backend
+In Terminal 1:
 ```bash
-# Navigate to backend directory
-cd backend
-
-# Create and activate a virtual environment
-python -m venv venv
-# On Windows:
-.\venv\Scripts\activate
-# On Linux / macOS:
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Start FastAPI development server
-uvicorn app.api:app --host 0.0.0.0 --port 8000 --reload
+# From repository root
+python -m uvicorn app.api:app --host 127.0.0.1 --port 8000 --app-dir backend --reload
 ```
-The backend is now live at `http://localhost:8000`.
+The FastAPI backend is now running at `http://127.0.0.1:8000` (test health check: `http://127.0.0.1:8000/api/health`).
 
-#### 2. Frontend Setup
-In a separate terminal:
+#### 2. Start the React Frontend
+In Terminal 2:
 ```bash
-# Navigate to frontend directory
 cd frontend
-
-# Install npm dependencies
 npm install
-
-# Start Vite development server
 npm run dev
 ```
-The frontend is now accessible at `http://localhost:5173` (with Vite automatically proxying `/api` calls to `http://localhost:8000`).
+Open **[http://localhost:5173](http://localhost:5173)** in your browser! Vite automatically proxies all `/api` calls directly to your local FastAPI backend on port 8000.
 
 ---
 
-## How to Refresh the Data
+## 6. What to Do Inside the Application (User Guide)
 
-The repository includes pre-ingested, deduplicated snapshots covering **2025-12-31 to 2026-02-02** in `backend/data/`. To refresh or extend this dataset directly from the Elexon Insights API:
+When you open **[http://localhost:5173](http://localhost:5173)**:
+
+### 1. The Day-Ahead Decision Desk (`/`)
+- **Gate Cutoff Selector (Top Right)**: Switch between `09:00`, `11:00`, `12:00`, or `14:00` London. Notice how the latest available NWP model changes dynamically to reflect what was physically available before auction gate closure!
+- **Date Stepper**: Navigate across January 2026 delivery days (e.g. January 15th storm front).
+- **KPI Ribbon**: Inspect **Average Forecast**, **Peak Forecast**, **Publish Time Used**, and the **Risk-Adjusted Average** (raw forecast minus P90 buffer).
+- **Interactive Chart Controls**:
+  - Click **"Thermal Procurement"** to reveal consumer demand and required thermal peaker procurement.
+  - Click **"Show Earlier Runs"** to view fainter traces of prior NWP weather runs.
+  - Click **"Reveal Actual (Back-Test)"** to overlay what physically outturned in `FUELHH`.
+- **Thermal Deficit Calculator**: Adjust the **Consumer Peak Demand** (e.g. 32 GW GB national), **Day-Ahead Price** (£75/MWh), and **Cashout SBP** (£165/MWh) to see exact MWh thermal requirements and avoided imbalance penalties!
+- **Download CSV**: Click to immediately download the 48-period dispatch schedule.
+
+### 2. Accuracy & Buffer Sizing Backtesting (`/accuracy`)
+- **Holistic KPIs**: View January 2026 **MAE (2,122 MW)**, **RMSE (2,616 MW)**, **Mean Bias Error (+1,840 MW)**, and **WAPE (23.9%)**.
+- **Timeseries Brush**: Drag the slider handles at the bottom of the 744-hour chart to zoom into specific storm ramps or lull periods.
+- **Error Distribution Histogram**: Observe the positive skew in 500 MW bins confirming persistent over-forecasting risk.
+- **Diurnal Profile**: View how error varies by hour of day (00:00 to 23:00 UTC).
+- **Lead-Time Horizon Decay**: Inspect how model precision degrades from 0-6h out to 48h+.
+- **Daily Table**: Click any column header (`Bias`, `MAE`, `RMSE`, `Buffer`) to sort ascending/descending.
+
+### 3. Methodology Reference (`/method`)
+- Read the educational documentation detailing the zero-lookahead auction math, reanalysis anomaly cleansing, and expanding-window P90 safety buffer formulations.
+
+---
+
+## 7. Video Demo & Submission Instructions
+
+### 3.1 Video Demo Guide (Max 10 Minutes)
+Record an unlisted YouTube video divided into two equal parts:
+- **Part 1 (0:00 – 5:00): Pitch to the Client** (Head of Power Procurement): Impress them with the Day-Ahead Decision Desk, P90 safety buffer, and the Thermal Procurement Deficit Calculator saving cash-out penalties.
+- **Part 2 (5:00 – 10:00): Technical Review for Internal Tech Lead**: Walk through clean architecture, zero-lookahead filtering, pure typed Pandas analytics, test coverage, and Docker orchestration.
+
+> Refer to **[docs/VIDEO_PRESENTATION_SCRIPT.md](docs/VIDEO_PRESENTATION_SCRIPT.md)** for the complete word-for-word rehearsed script.
+
+### 3.2 Anonymous Public GitHub Repository
+1. Create a public repository with an anonymous name (e.g., `kjhwr-desk` or a random string).
+2. Push this codebase:
+   ```bash
+   git init
+   git add .
+   git commit -m "feat: UK Wind Day-Ahead Trading Desk v1.0"
+   git branch -M main
+   git remote add origin https://github.com/<your-username>/<anonymous-repo-name>.git
+   git push -u origin main
+   ```
+
+### 3.3 Microsoft Form Submission
+Submit your links in the official form:
+👉 **[https://forms.cloud.microsoft/r/FTX6K2bbnU](https://forms.cloud.microsoft/r/FTX6K2bbnU)**
+
+**Crucial Check**: Open every URL (GitHub repo, YouTube video, deployed app) in **Incognito Mode** to verify public access before submitting!
+
+---
+
+## 8. Testing & Quality Suite
+
+The repository has been verified with 100% passing tests:
 
 ```bash
-# Ensure virtualenv is active
-cd backend
+# 1. Run all 42 Python backend tests (analytics, API, repository, client)
+python -m pytest backend/tests -v
 
-# Fetch and overwrite snapshots for a custom date range
-python -m app.ingest --from 2025-12-31 --to 2026-02-02 --output-dir backend/data
+# 2. Run all 15 React frontend component tests
+npm --prefix frontend test
 
-# Or refresh using specific dates
-python -m app.ingest --from 2026-01-01 --to 2026-01-31
+# 3. Verify TypeScript build
+npm --prefix frontend run build
 ```
 
-### Ingestion CLI Parameters:
-- `--from YYYY-MM-DD`: Start of the ingestion interval (inclusive).
-- `--to YYYY-MM-DD`: End of the ingestion interval (inclusive).
-- `--output-dir PATH`: Directory to store compressed `.csv.gz` files (defaults to `backend/data/`).
-- `--timeout SECONDS`: HTTP request timeout budget per chunk (default: `30`).
+- **Backend Pytest**: **42 / 42 passed** (100%)
+- **Frontend Vitest**: **15 / 15 passed** (100%)
+- **TypeScript Compiler**: **0 errors**
 
 ---
 
-## Key Domain Assumptions
+## 9. AI Tools Used
 
-For an exhaustive discussion of design trade-offs, refer to [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md). Key desk principles include:
-
-1. **Strict Auction Gate Cutoff (Zero Lookahead Bias)**:
-   Power auctions for delivery day $D$ close on day $D-1$ (e.g. 09:00 for desk preparation, 11:00 for EPEX auction gate). A forecast published at 11:05 on $D-1$ cannot physically be used for bidding. The system strictly selects the latest forecast satisfying:
-   $$\text{publishTime} \le \text{cutoff}_{\text{UTC}}(D-1)$$
-2. **Europe/London Timezone Canonical Gate**:
-   Trading cutoffs operate in UK civil time (`Europe/London`). Cutoffs are dynamically converted to UTC accounting for Daylight Saving Time (GMT vs BST).
-3. **Hourly vs. Half-Hourly Resolution**:
-   `WINDFOR` forecasts provide hourly average power; `FUELHH` actuals provide 30-minute settlement period power. By default, the system aggregates actuals to hourly resolution ($(\text{SP}_{2i-1} + \text{SP}_{2i}) / 2$) for like-for-like physical energy comparison.
-4. **Asymmetric Risk Sizing (P90 Over-Forecast)**:
-   Under-forecasting yields unexpected spill power (often sellable at cashout). Over-forecasting creates physical shortfalls that force the utility into the penal System Buy Price (SBP) imbalance market. The safety buffer is thus sized against the **90th percentile of positive errors ($\text{Forecast} - \text{Actual} > 0$)**.
-5. **Expanding Window Backtesting**:
-   The recommended buffer for day $D$ is strictly calculated using historical errors from preceding days $[D_{start}, D-1]$. This guarantees that safety recommendations never leak future data into past decisions.
-
----
-
-## Metric Definitions
-
-| Metric | Formula | Trading Desk Interpretation |
-|:---|:---|:---|
-| **Bias (Mean Error)** | $\frac{1}{N} \sum (\hat{y}_t - y_t)$ | Systematic over-forecasting ($>0$) or under-forecasting ($<0$). Positive bias indicates structural risk of shortfall. |
-| **MAE** | $\frac{1}{N} \sum \|\hat{y}_t - y_t\|$ | Mean Absolute Error. Expected magnitude of forecast deviation regardless of direction. |
-| **RMSE** | $\sqrt{\frac{1}{N} \sum (\hat{y}_t - y_t)^2}$ | Penalizes large outlier errors quadratically; critical for identifying extreme wind ramps or storm events. |
-| **WAPE** | $\frac{\sum \|\hat{y}_t - y_t\|}{\sum y_t} \times 100\%$ | Weighted Absolute Percentage Error. Volume-weighted percentage error unaffected by zero-generation division. |
-| **P50 / P90 / P95 Abs Error** | Quantiles of $\|\hat{y}_t - y_t\|$ | Distribution of error magnitudes. P90 represents the 1-in-10 worst deviation magnitude. |
-| **P90 Over-Forecast Error** | 90th percentile of $(\hat{y}_t - y_t \mid \hat{y}_t > y_t)$ | Recommended safety buffer to cover 90% of shortfall events without over-hedging. |
-| **Accuracy Band ($\pm 10\%$)** | $\% \text{ of periods with } \frac{\|\hat{y}_t - y_t\|}{y_t} \le 10\%$ | Percentage of delivery periods where the forecast was within standard operational tolerance. |
-
----
-
-## Testing & Quality Hardening
-
-The repository enforces strict linting, type safety, and test coverage standards:
-
-### 1. Backend Quality Suite
-```bash
-cd backend
-
-# Lint and check style with Ruff
-ruff check .
-ruff format --check .
-
-# Static type checking with Mypy
-mypy app
-
-# Run Pytest suite with code coverage report
-python -m pytest --cov=app --cov-report=term-missing
-```
-
-#### Coverage Highlights:
-- **`backend/app/analytics.py`**: **95% unit test coverage** verifying hand-computed mathematical fixtures, horizon decay, expanding window buffers, and edge cases.
-- **`backend/app/schemas.py`**: **100% schema validation coverage**.
-- Overall backend coverage: **90%**.
-
-### 2. Frontend Quality Suite
-```bash
-cd frontend
-
-# Lint with ESLint
-npm run lint
-
-# Typecheck and production bundle build
-npm run build
-
-# Run Vitest unit tests (React Testing Library)
-npm test
-```
-All 15 component tests pass covering `KpiCard`, `DateStepper`, `CutoffSelect`, and `EmptyState`.
-
-### 3. Continuous Integration (GitHub Actions)
-All pull requests and merges to `main` trigger `.github/workflows/ci.yml`, running Ruff, Mypy, Pytest with coverage, ESLint, Vitest, and a Docker container build verification.
-
----
-
-## AI Tools Used
-
-In accordance with project transparency guidelines, **AI assistance was utilized in the development of this repository**:
-
-- **AI Assistants**: Google Antigravity Agentic AI Assistant (powered by Google DeepMind / Claude 3.5 Sonnet).
+In accordance with transparency requirements, **AI tools were used** to accelerate development:
+- **AI Agent**: Google Antigravity Agentic Assistant (powered by Google DeepMind / Claude 3.5 Sonnet).
 - **Scope of AI Assistance**:
-  1. **Data Exploration & OpenAPI Analysis**: Analyzing the Elexon BMRS Swagger specification and formulating initial exploratory queries in `scripts/explore_elexon.py`.
-  2. **Domain Architecture & Layering**: Scaffolding clean repository boundaries separating pure Pandas analytics from FastAPI presentation layers.
-  3. **Mathematical & Statistical Verification**: Validating formula implementations for WAPE, diurnal aggregations, and expanding-window quantile algorithms.
-  4. **Test Suite Generation**: Crafting hand-computed numerical fixtures for pytest test cases and configuring Vitest + React Testing Library suites.
-  5. **Containerization & CI Pipeline**: Writing multi-stage Dockerfiles, Nginx reverse proxy configurations, and GitHub Actions workflow definitions.
-  6. **UI Component Design**: Crafting the energy desk dark navy design tokens, SVG icon integrations, and Recharts interactive visualizations.
+  - Ingestion exploratory analysis of Elexon BMRS OpenAPI stream endpoints.
+  - Implementation of pure Pandas vectorised analytics and expanding-window quantile algorithms.
+  - Designing the institutional Greyish, Warm Beige, and Burgundy color system.
+  - Formulating unit test fixtures and Vitest component test suites.
+  - Docker containerization, Vercel serverless adapters, and CI pipeline setup.
 
-All generated code, mathematical formulas, and architectural decisions were reviewed, verified against active Elexon datasets, and hardened with type annotations and test suites.
+All algorithms, mathematical definitions, and data joins were rigorously verified against official Elexon Insights documentation.
 
 ---
 
-## License
+## 10. License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
