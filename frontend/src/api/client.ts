@@ -32,9 +32,15 @@ async function loadFallbackData(): Promise<any> {
     fallbackPromise = fetch('/fallback_data.json')
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load fallback_data.json');
-        return res.json();
+        return res.text();
       })
-      .then((data) => {
+      .then((rawText) => {
+        // Sanitize any Python NaNs or Infinities into standard JSON nulls
+        const sanitized = rawText
+          .replace(/:\s*NaN\b/g, ': null')
+          .replace(/:\s*Infinity\b/g, ': null')
+          .replace(/:\s*-Infinity\b/g, ': null');
+        const data = JSON.parse(sanitized);
         cachedFallbackData = data;
         return data;
       })
